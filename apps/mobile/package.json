@@ -1,0 +1,13 @@
+{
+  "name": "@nexus-ai/mobile",
+  "version": "3.0.0",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "react": "18.3.1",
+    "react-native": "0.75.3",
+    "expo": "~51.0.0",
+    "expo-router": "~3.5.0"
+  },
+  "scripts": { "start": "expo start", "android": "expo start --android", "ios": "expo start --ios" }
+}

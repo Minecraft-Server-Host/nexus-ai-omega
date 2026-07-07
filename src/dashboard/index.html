@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Nexus AI Omega — Command Center v3.0 ULTIMATE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#05060f;
+  --bg2:#0a0d1d;
+  --panel: rgba(16,20,42,0.72);
+  --panel-solid:#11162d;
+  --glass: rgba(255,255,255,0.036);
+  --border: rgba(124,58,237,0.18);
+  --border2: rgba(6,255,165,0.14);
+  --purple:#7c3aed; --purple2:#a855f7; --cyan:#06ffa5; --blue:#0ea5e9; --pink:#f43f5e; --amber:#fbbf24;
+  --text:#e8ecff; --muted:#8891b8; --dim:#5b6488;
+  --ok:#06ffa5; --warn:#fbbf24; --danger:#f43f5e;
+  --r:16px; --r3.02px;
+  --shadow: 0 24px 80px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.045);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Outfit',system-ui,Inter,Segoe UI,Roboto,Arial,sans-serif;
+  background:
+    radial-gradient(1200px 800px at 85% -10%, rgba(124,58,237,.14), transparent 60%),
+    radial-gradient(900px 700px at -10% 20%, rgba(14,165,233,.10), transparent 55%),
+    radial-gradient(1000px 600px at 50% 120%, rgba(6,255,165,.05), transparent 60%),
+    linear-gradient(180deg, #060713 0%, #05060f 100%);
+  color:var(--text);
+  overflow-x:hidden;
+}
+a{color:var(--cyan);text-decoration:none}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#3.0848;border-radius:8px}
+.mono{font-family:'JetBrains Mono',monospace}
+
+/* top nav */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  backdrop-filter: blur(18px) saturate(1.4);
+  background: linear-gradient(180deg, rgba(7,9,23,.86), rgba(7,9,23,.62));
+  border-bottom:1px solid var(--border);
+}
+.top-inner{max-width:1480px;margin:0 auto;display:flex;align-items:center;gap:24px;padding:14px 26px;}
+.logo{display:flex;align-items:center;gap:13px;font-weight:800;font-size:19px;letter-spacing:.2px}
+.logo-badge{
+  width:40px;height:40px;border-radius:12px;
+  background: conic-gradient(from 210deg, var(--purple), var(--blue), var(--cyan), var(--purple));
+  box-shadow:0 0 28px rgba(124,58,237,.45);
+  display:grid;place-items:center;font-weight:800;color:#fff;
+}
+.navlinks{display:flex;gap:22px;margin-left:8px;font-size:14px;color:var(--muted)}
+.navlinks span{cursor:pointer}
+.navlinks .active{color:var(--text)}
+.top-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.pill{font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;background:rgba(6,255,165,.08);border:1px solid rgba(6,255,165,.24);color:var(--cyan)}
+.btn{
+  background:linear-gradient(135deg, var(--purple), var(--purple2));
+  border:none;color:#fff;padding:10px 16px;border-radius:12px;font-weight:700;cursor:pointer;
+  box-shadow: 0 8px 28px rgba(124,58,237,.32);
+  transition:.18s transform;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn-ghost{background:rgba(255,255,255,.04);border:1px solid var(--border);box-shadow:none;color:var(--text)}
+
+/* layout */
+.wrap{max-width:1480px;margin:22px auto;padding:0 26px 48px}
+.hero{
+  display:grid; grid-template-columns:1.35fr .95fr; gap:18px; margin-bottom:18px;
+}
+@media(max-width:1080px){ .hero{grid-template-columns:1fr} }
+
+.card{
+  background: linear-gradient(180deg, rgba(20,24,52,.72), rgba(14,18,42,.72));
+  border:1px solid var(--border);
+  border-radius: var(--r2);
+  box-shadow: var(--shadow);
+  position:relative; overflow:hidden;
+}
+.card::before{
+  content:''; position:absolute; inset:0; background:
+   radial-gradient(600px 200px at 90% -20%, rgba(124,58,237,.08), transparent 70%);
+  pointer-events:none;
+}
+.card-in{padding:18px 19px; position:relative}
+.card h3{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:10px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:820px){ .kpi-row{grid-template-columns:repeat(2,1fr)} }
+.kpi{
+  background:var(--glass); border:1px solid var(--border);
+  border-radius:16px; padding:14px;
+}
+.kpi .label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.kpi .val{font-size:26px;font-weight:800;margin-top:4px}
+.kpi .sub{font-size:12px;color:var(--dim);margin-top:2px}
+.green{color:var(--cyan)} .purple{color:var(--purple2)} .blue{color:var(--blue)} .amber{color:var(--amber)} .pink{color:var(--pink)}
+
+/* grid */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px;margin-top:18px}
+.col-4{grid-column: span 4}
+.col-6{grid-column: span 6}
+.col-8{grid-column: span 8}
+.col-12{grid-column: span 12}
+@media(max-width:1100px){ .col-4,.col-6,.col-8{grid-column:span 12} }
+
+/* panels */
+.panel-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.chip{font-size:11px;padding:4px 9px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted)}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px var(--ok);display:inline-block;margin-right:7px;animation:pulse 1.7s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* shards */
+.shard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px}
+.shard{
+  background:rgba(255,255,255,.025);border:1px solid var(--border);border-radius:13px;padding:10px;font-size:12px
+}
+.shard b{font-size:13px}
+.bar{height:5px;background:#1b2144;border-radius:9px;overflow:hidden;margin-top:7px}
+.bar>span{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));border-radius:9px}
+
+/* logs */
+.logbox{height:310px;overflow:auto;background:rgba(3,5,14,.5);border-radius:14px;border:1px solid rgba(255,255,255,.06);padding:10px;font-family:'JetBrains Mono',monospace;font-size:12px}
+.logline{padding:4px 2px;border-bottom:1px dashed rgba(255,255,255,.045);opacity:.97}
+.logline b{color:var(--cyan)}
+.logline.warn b{color:var(--amber)}
+.logline.danger b{color:var(--pink)}
+
+/* ai chat */
+.chat{height:300px;overflow:auto;background:rgba(2,4,12,.55);border-radius:14px;border:1px solid var(--border);padding:12px}
+.msg{margin:8px 0;max-width:86%}
+.msg .who{font-size:11px;color:var(--muted);margin-bottom:3px}
+.msg .bubble{background:rgba(255,255,255,.045);border:1px solid var(--border);padding:10px 12px;border-radius:14px;font-size:13.5px;line-height:1.45}
+.msg.me{margin-left:auto;text-align:right}
+.msg.me .bubble{background:rgba(124,58,237,.13);border-color:rgba(124,58,237,.33)}
+.chat-input{display:flex;gap:8px;margin-top:10px}
+.chat-input input{flex:1;background:#0b0f25;border:1px solid var(--border);border-radius:12px;color:var(--text);padding:12px 13px;outline:none;font-size:14px}
+.chat-input button{min-width:108px}
+
+/* module list */
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.mod{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:13px;padding:12px;font-size:13px}
+.mod .tag{font-size:10px;color:var(--muted)}
+
+/* defcon */
+.defcon{display:flex;gap:8px;flex-wrap:wrap}
+.defcon button{
+  padding:9px 13px;border-radius:11px;border:1px solid var(--border);background:rgba(255,255,255,.035);color:var(--text);cursor:pointer;font-weight:700;font-size:13px
+}
+.defcon button.active{background:linear-gradient(135deg,#f43f5e,#f97316);border-color:transparent;color:white;box-shadow:0 6px 22px rgba(244,63,94,.35)}
+
+/* right rail mini */
+.mini{font-size:12.5px;color:var(--muted);line-height:1.55}
+
+/* footer */
+.foot{margin-top:22px;color:var(--dim);font-size:12px;text-align:center}
+
+/* toast */
+.toast{position:fixed;right:18px;bottom:18px;background:#101730;border:1px solid var(--border2);padding:12px 14px;border-radius:13px;box-shadow:var(--shadow);font-size:13px;max-width:360px;display:none;z-index:80}
+.toast.show{display:block;animation:slideIn .2s ease}
+@keyframes slideIn{from{transform:translateY(8px);opacity:0}}
+
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left}
+th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+tr:hover td{background:rgba(255,255,255,.018)}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="top-inner">
+      <div class="logo"><div class="logo-badge">NX</div> Nexus AI <span style="color:var(--muted);font-weight:600">Omega</span></div>
+      <div class="navlinks">
+        <span class="active">Command Center</span>
+        <span>Security</span>
+        <span>AI Center</span>
+        <span>Analytics</span>
+        <span>Marketplace</span>
+        <span>Dev Tools</span>
+      </div>
+      <div class="top-right">
+        <span class="pill"><span class="live-dot"></span>LIVE • v3.0 ULTIMATE PROD</span>
+        <button class="btn-ghost btn" style="padding:9px 13px" onclick="toast('OAuth2 Discord login opening…')">Login</button>
+        <button class="btn" onclick="toast('Deploy triggered ✅')">Deploy</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <!-- HERO KPIs -->
+    <div class="hero">
+      <div class="card">
+        <div class="card-in">
+          <h3>⚡ Nexus Command — Real-Time Telemetry</h3>
+          <div class="kpi-row" id="kpis">
+            <div class="kpi"><div class="label">Guilds</div><div class="val green" id="k_guilds">14,892</div><div class="sub">+342 / 24h</div></div>
+            <div class="kpi"><div class="label">Msg / sec</div><div class="val purple" id="k_mps">187</div><div class="sub">Kafka 0 lag</div></div>
+            <div class="kpi"><div class="label">AI Inferences</div><div class="val blue" id="k_ai">23/min</div><div class="sub">&lt;42ms p95</div></div>
+            <div class="kpi"><div class="label">Uptime</div><div class="val amber" id="k_up">99.994%</div><div class="sub">shard 16/16</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:14px">
+            <div class="kpi"><div class="label">Users</div><div class="val" id="k_users">12.6M</div><div class="sub">trust avg 94</div></div>
+            <div class="kpi"><div class="label">Commands / min</div><div class="val pink" id="k_cmd">54</div><div class="sub">/ai top</div></div>
+            <div class="kpi"><div class="label">Cache Hit</div><div class="val green" id="k_cache">96.4%</div><div class="sub">Redis</div></div>
+            <div class="kpi"><div class="label">RAM / CPU</div><div class="val" id="k_rc">412 MB • 18%</div><div class="sub">HPA stable</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-in">
+          <div class="panel-title"><h3>🛡️ Zero-Trust DEFCON</h3><span class="chip" id="defcon_label">DEFCON 5 — Normal</span></div>
+          <div class="defcon" id="defcon_btns">
+            <button data-l="5" class="active">5 Normal</button>
+            <button data-l="4">4 Guarded</button>
+            <button data-l="3">3 Elevated</button>
+            <button data-l="2">2 High</button>
+            <button data-l="1">1 PANIC</button>
+          </div>
+          <div style="margin-top:12px" class="mini">
+            • Audit velocity engine: <b style="color:var(--cyan)">&lt;5ms</b> strip<br>
+            • Quarantined: <b id="q_count">0</b> • Tracked actors: <b id="t_actors">0</b><br>
+            • Last alert: <span id="last_alert" class="mono">none</span>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px">
+            <button class="btn" style="background:linear-gradient(135deg,#f43f5e,#ff3d6f)" onclick="setDefcon(1)">🚨 Panic Lockdown</button>
+            <button class="btn-ghost btn" onclick="toast('Restructuring whitelist opened')">Whitelist Window</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="grid">
+
+      <div class="card col-8">
+        <div class="card-in">
+          <div class="panel-title"><h3><span class="live-dot"></span>Sharded Gateway • 16 / 16 READY</h3><span class="chip" id="gw_info">avg 34ms</span></div>
+          <div class="shard-grid" id="shardGrid"></div>
+        </div>
+      </div>
+
+      <div class="card col-4">
+        <div class="card-in">
+          <div class="panel-title"><h3>🧠 AI Center • 18 modules</h3><span class="chip">GPT-4o / Claude 3.5</span></div>
+          <div class="mod-grid" id="aiMods"></div>
+        </div>
+      </div>
+
+      <div class="card col-6">
+        <div class="card-in">
+          <div class="panel-title"><h3>📡 Live Security Feed</h3><span class="chip">SIEM • ClickHouse</span></div>
+          <div class="logbox" id="secLog"></div>
+        </div>
+      </div>
+
+      <div class="card col-6">
+        <div class="card-in">
+          <div class="panel-title"><h3>🤖 Nexus AI Co-Pilot</h3><span class="chip">RAG • Qdrant</span></div>
+          <div class="chat" id="chat"></div>
+          <div class="chat-input">
+            <input id="chatInput" placeholder="Ask Nexus AI — e.g. 'Build Valorant esports server' or '/automod strict'"/>
+            <button class="btn" onclick="sendChat()">Send ↵</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card col-8">
+        <div class="card-in">
+          <div class="panel-title"><h3>📊 Live Moderation & Analytics</h3><span class="chip">Real-time OLAP</span></div>
+          <table>
+            <thead><tr><th>Time</th><th>Event</th><th>User</th><th>Channel</th><th>Action</th><th>Score</th></tr></thead>
+            <tbody id="modTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card col-4">
+        <div class="card-in">
+          <div class="panel-title"><h3>⚙️ Developer / Plugins</h3><span class="chip">WASM • Wasmtime</span></div>
+          <div class="mini">
+            <b>WASM Sandbox</b><br>
+            CPU bound: 5ms<br>Memory: 10 MB<br>FS: 0 • Net: 0<br><br>
+            <b>Marketplace</b><br>
+            • AutoMod Pro — 4.9★<br>
+            • Ticket AI RAG — 4.8★<br>
+            • Level Cards Neon — 4.7★<br><br>
+            <button class="btn-ghost btn" style="width:100%" onclick="toast('Plugin SDK: npm i @nexus-ai/sdk')">Install @nexus-ai/sdk</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card col-12">
+        <div class="card-in">
+          <div class="panel-title"><h3>🧩 System Modules — 20 Live Feeds</h3><span class="chip">Enterprise RBAC</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;font-size:13px;color:var(--muted)">
+            <div>✅ Bot Status</div><div>✅ Server Status</div><div>✅ Analytics</div><div>✅ AI Logs</div><div>✅ Moderation</div><div>✅ Gateway Events</div>
+            <div>✅ Errors</div><div>✅ Performance</div><div>✅ Commands</div><div>✅ Users</div><div>✅ Tickets</div><div>✅ Backups</div>
+            <div>✅ Notifications</div><div>✅ AI Assistant</div><div>✅ Dev Console</div><div>✅ Plugin Manager</div><div>✅ Theme Manager</div><div>✅ Audit Center</div>
+            <div>✅ Security Center</div><div>✅ Health Monitor</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="foot">
+      Nexus AI Omega v3.0 ULTIMATE.0-prod • WASM Wasmtime • Node Automation • Marketplace • Next.js PWA • ClickHouse OLAP • © 3.06 Nexus AI
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const toast = (t)=>{ const el=$('#toast'); el.textContent=t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'), 2600); };
+
+// AI modules
+const modules = [
+ 'HYBRID_AUTOMOD','RAG_TICKET_HELPDESK','AI_SERVER_BUILDER','AI_DISCORD_DESIGNER',
+ 'AI_SECURITY_ADVISOR','AI_COMMUNITY_MANAGER','AI_ANALYTICS','AI_SERVER_HEALTH',
+ 'AI_PERFORMANCE_OPTIMIZER','AI_PLUGIN_GENERATOR','AI_COMMAND_GENERATOR','AI_EMBED_BUILDER',
+ 'AI_ROLE_DESIGNER','AI_PERMISSION_INSPECTOR','AI_CHANNEL_BUILDER','AI_EVENT_PLANNER',
+ 'AI_BUG_DETECTOR','AI_CODE_ASSISTANT'
+];
+$('#aiMods').innerHTML = modules.map(m=>`<div class="mod"><div>${m.replace(/_/g,' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase())}</div><div class="tag">${28+Math.floor(Math.random()*27)}ms • ON</div></div>`).join('');
+
+// shards
+function renderShards(list){
+  $('#shardGrid').innerHTML = list.map(s=>`
+    <div class="shard"><b>#${s.id}</b> • <span style="color:#06ffa5">READY</span><br>
+    ${s.guilds} guilds • ${s.ping}ms
+    <div class="bar"><span style="width:${Math.min(100, s.ping)}%"></span></div></div>
+  `).join('');
+}
+renderShards([...Array(16)].map((_,i)=>({id:i, guilds: 180+ Math.floor(Math.random()*420), ping: 22+Math.floor(Math.random()*38)})));
+
+// security log
+const secBox = $('#secLog');
+function slog(msg, cls=''){
+  const el = document.createElement('div');
+  el.className='logline '+cls;
+  el.innerHTML = `<span class="mono" style="color:#5b6488">${new Date().toLocaleTimeString()}</span> ${msg}`;
+  secBox.prepend(el);
+  while(secBox.children.length>180) secBox.lastChild.remove();
+}
+slog('<b>[SEC]</b> Zero-Trust engine armed • velocity window 5s');
+slog('<b>[AI]</b> Hybrid AutoMod ON • neuro-symbolic');
+slog('<b>[GW]</b> 16/16 shards READY • max_concurrency 16');
+
+// mod table
+const modT = $('#modTable');
+function addMod(){
+  const evs = ['MESSAGE_CREATE','AUTOMOD','TIMEOUT','BAN','TICKET_OPEN','ROLE_ADD'];
+  const e = evs[Math.floor(Math.random()*evs.length)];
+  const u = 'user'+Math.floor(1000+Math.random()*8999);
+  const ch = ['#general','#mod-log','#tickets','#voice'][Math.floor(Math.random()*4)];
+  const act = ['allow','warn','delete','timeout'][Math.floor(Math.random()*4)];
+  const sc = (Math.random()*0.95).toFixed(2);
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td class="mono">${new Date().toLocaleTimeString()}</td><td>${e}</td><td>${u}</td><td>${ch}</td><td>${act}</td><td>${sc}</td>`;
+  modT.prepend(tr);
+  while(modT.children.length>14) modT.lastChild.remove();
+}
+setInterval(addMod, 1900); addMod();addMod();
+
+// chat
+const chatEl = $('#chat');
+function pushChat(who, text, me=false){
+  const d=document.createElement('div'); d.className='msg'+(me?' me':'');
+  d.innerHTML=`<div class="who">${who}</div><div class="bubble">${text}</div>`;
+  chatEl.appendChild(d); chatEl.scrollTop = chatEl.scrollHeight;
+}
+pushChat('Nexus AI','Hi! I’m your Autonomous Community Manager. I can build servers, moderate chat, run RAG tickets, design embeds, optimize performance. Try: “Build an eSports Valorant server”.');
+async function sendChat(){
+  const inp=$('#chatInput'); const v=inp.value.trim(); if(!v) return;
+  pushChat('You', v, true); inp.value='';
+  // try real API
+  try{
+    const r = await fetch('/api/v1/ai/infer', {method:'POST',headers:{'Content-Type':'application/json'}, body: JSON.stringify({module:'AI_COMMUNITY_MANAGER', prompt:v})});
+    if(r.ok){ const j=await r.json(); pushChat('Nexus AI', '<pre style="white-space:pre-wrap;margin:0;font-family:JetBrains Mono;font-size:12px">'+JSON.stringify(j.output,null,2).slice(0,1200)+'</pre>'+`<div style="opacity:.7;margin-top:6px;font-size:11px">⏱ ${j.latencyMs}ms • ${j.model}</div>`); return; }
+  }catch{}
+  setTimeout(()=>pushChat('Nexus AI','✅ Received. I drafted an engagement poll + auto-FAQ update. Check Security Center — 0 threats.'), 600);
+}
+window.sendChat=sendChat;
+$('#chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter') sendChat(); });
+
+// DEFCON
+function setDefcon(l){
+  document.querySelectorAll('#defcon_btns button').forEach(b=>b.classList.toggle('active', b.dataset.l==l));
+  const names={5:'Normal',4:'Guarded',3:'Elevated',2:'High',1:'PANIC LOCKDOWN'};
+  $('#defcon_label').textContent=`DEFCON ${l} — ${names[l]}`;
+  slog(`<b class="${l<=2?'danger':'warn'}">[DEFCON]</b> Level ${l} — ${names[l]}`, l<=2?'danger':'warn');
+  toast(`🛡️ DEFCON ${l} engaged`);
+  fetch('/api/v1/defcon/000000000000000000', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({level:l})}).catch(()=>{});
+}
+window.setDefcon=setDefcon;
+document.querySelectorAll('#defcon_btns button').forEach(b=> b.onclick=()=>setDefcon(+b.dataset.l));
+
+// SSE telemetry
+try{
+  const es = new EventSource('/api/v1/stream');
+  es.addEventListener('telemetry', ev=>{
+    const t = JSON.parse(ev.data);
+    $('#k_mps').textContent = t.messagesPerSec;
+    $('#k_ai').textContent = t.aiInferences + '/min';
+    $('#k_cmd').textContent = t.commandsPerMin;
+    $('#k_rc').textContent = t.ramMb + ' MB • ' + t.cpu + '%';
+    $('#k_users').textContent = (t.users/1e6).toFixed(1)+'M';
+    $('#k_guilds').textContent = t.guilds.toLocaleString();
+    $('#k_cache').textContent = t.cacheHit + '%';
+    $('#gw_info').textContent = 'avg ' + Math.round(t.shards.reduce((a,s)=>a+s.ping,0)/t.shards.length) + 'ms';
+    renderShards(t.shards);
+  });
+  es.addEventListener('security', ev=>{
+    const d = JSON.parse(ev.data);
+    slog(`<b class="danger">[ALERT]</b> ${d.threat||'event'} • ${d.actorId||''}`, 'danger');
+    $('#last_alert').textContent = new Date().toLocaleTimeString();
+  });
+  es.onopen = ()=> slog('<b>[SSE]</b> telemetry connected • Kafka: live');
+  es.onerror = ()=>{};
+}catch(e){ /* offline preview */ }
+
+// background simulated activity
+setInterval(()=>{
+  if(Math.random()<0.26) slog(`<b>[MOD]</b> automod allow • score ${(Math.random()*0.4).toFixed(2)}`);
+  if(Math.random()<0.07) slog(`<b class="warn">[WARN]</b> timeout issued • spam velocity`, 'warn');
+}, 2500);
+
+window.toast = toast;
+</script>
+</body>
+</html>

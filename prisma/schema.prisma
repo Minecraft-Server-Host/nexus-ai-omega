@@ -1,0 +1,745 @@
+// Nexus AI Omega — Prisma Schema v2.1
+// PostgreSQL 15 — ACID Enterprise Core
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Guild {
+  id               String   @id
+  name             String
+  icon             String?
+  ownerId          String
+  memberCount      Int      @default(0)
+  premiumTier      Int      @default(0)
+  locale           String   @default("en-US")
+  
+  // Nexus Config
+  prefix           String?  @default("!")
+  isPremium        Boolean  @default(false)
+  defconLevel      Int      @default(5) // 5 normal -> 1 panic
+  aiEnabled        Boolean  @default(true)
+  securityEnabled  Boolean  @default(true)
+  language         String   @default("en")
+  
+  // Features
+  automodEnabled   Boolean  @default(true)
+  levelingEnabled  Boolean  @default(true)
+  economyEnabled   Boolean  @default(false)
+  ticketsEnabled   Boolean  @default(true)
+  
+  settings         Json     @default("{}")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  members          GuildMember[]
+  auditLogs        AuditLog[]
+  tickets          Ticket[]
+  securityRules    SecurityRule[]
+  aiLogs           AILog[]
+  plugins          GuildPlugin[]
+  customCommands   CustomCommand[]
+  roleMenus        RoleMenu[]
+  rankCards        RankCardConfig[]
+  giveaways        Giveaway[]
+  playlists        Playlist[]
+  quarantine       QuarantineRecord[]
+  storeItems       StoreItem[]
+
+  @@index([ownerId])
+  @@index([isPremium])
+  @@map("guilds")
+}
+
+model User {
+  id            String   @id
+  username      String
+  discriminator String   @default("0")
+  avatar        String?
+  globalName    String?
+  bot           Boolean  @default(false)
+  system        Boolean  @default(false)
+  locale        String?
+  flags         Int      @default(0)
+
+  // Nexus Trust
+  trustScore    Int      @default(100) // 0-100
+  reputation    Int      @default(0)
+  verified      Boolean  @default(false)
+  blacklisted   Boolean  @default(false)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships   GuildMember[]
+  aiLogs        AILog[]
+  quarantine    QuarantineRecord[]
+  giveawayEntries GiveawayEntry[]
+
+  @@index([trustScore])
+  @@map("users")
+}
+
+model GuildMember {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String
+  nick        String?
+  joinedAt    DateTime @default(now())
+  premiumSince DateTime?
+
+  // Nexus Economy & Leveling
+  xp          BigInt   @default(0)
+  level       Int      @default(0)
+  voiceXp     BigInt   @default(0)
+  messages    Int      @default(0)
+  voiceMinutes Int     @default(0)
+  currency    BigInt   @default(0)
+  bank        BigInt   @default(0)
+  reputation  Int      @default(0)
+  warnings    Int      @default(0)
+
+  roles       String[] @default([])
+  isBanned    Boolean  @default(false)
+  isMuted     Boolean  @default(false)
+  muteExpires DateTime?
+
+  lastMessageAt DateTime?
+  lastVoiceAt   DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  guild       Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, userId])
+  @@index([guildId, level])
+  @@index([guildId, xp])
+  @@index([guildId, currency])
+  @@map("guild_members")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String?
+  targetId    String?
+  actionType  String   // BAN, KICK, CHANNEL_DELETE, ROLE_UPDATE...
+  reason      String?
+  changes     Json?
+  metadata    Json?
+  severity    Int      @default(1) // 1-5
+  diff        Json?
+  ipHash      String?
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  guild       Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, createdAt])
+  @@index([userId])
+  @@index([actionType])
+  @@map("audit_logs")
+}
+
+model Ticket {
+  id            String   @id @default(cuid())
+  guildId       String
+  channelId     String   @unique
+  userId        String
+  claimedBy     String?
+  panelId       String?
+  category      String   @default("support")
+  subject       String?
+  status        String   @default("open") // open, claimed, closed
+  priority      Int      @default(2)
+  slaDeadline   DateTime?
+  transcriptUrl String?
+  aiSummary     String?
+  rating        Int?
+  tags          String[] @default([])
+  metadata      Json?
+  
+  createdAt     DateTime @default(now())
+  closedAt      DateTime?
+  updatedAt     DateTime @updatedAt
+
+  guild         Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, status])
+  @@index([userId])
+  @@map("tickets")
+}
+
+model SecurityRule {
+  id          String   @id @default(cuid())
+  guildId     String
+  name        String
+  type        String   // ANTINUKE, AUTOMOD, ANTISPAM, ANTIRAID...
+  enabled     Boolean  @default(true)
+  config      Json
+  actions     Json
+  priority    Int      @default(100)
+  hits        Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  guild       Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, enabled])
+  @@map("security_rules")
+}
+
+model AILog {
+  id          String   @id @default(cuid())
+  guildId     String?
+  userId      String?
+  module      String   // HYBRID_AUTOMOD, RAG_TICKET, SERVER_BUILDER...
+  prompt      String
+  response    String?
+  tokensIn    Int      @default(0)
+  tokensOut   Int      @default(0)
+  latencyMs   Int      @default(0)
+  model       String?
+  success     Boolean  @default(true)
+  costUsd     Float?   @default(0)
+  metadata    Json?
+
+  createdAt   DateTime @default(now())
+
+  guild       Guild? @relation(fields: [guildId], references: [id], onDelete: SetNull)
+  user        User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([guildId, module])
+  @@index([createdAt])
+  @@map("ai_logs")
+}
+
+model Plugin {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String
+  version     String   @default("1.0.0")
+  authorId    String
+  authorName  String
+  wasmUrl     String?
+  sourceUrl   String?
+  icon        String?
+  verified    Boolean  @default(false)
+  featured    Boolean  @default(false)
+  downloads   Int      @default(0)
+  rating      Float    @default(0)
+  priceUsd    Float    @default(0)
+  permissions String[] @default([])
+  manifest    Json
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  installs    GuildPlugin[]
+
+  @@index([verified, featured])
+  @@map("plugins")
+}
+
+model GuildPlugin {
+  guildId   String
+  pluginId  String
+  enabled   Boolean  @default(true)
+  config    Json     @default("{}")
+  installedAt DateTime @default(now())
+
+  guild   Guild  @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  plugin  Plugin @relation(fields: [pluginId], references: [id], onDelete: Cascade)
+
+  @@id([guildId, pluginId])
+  @@map("guild_plugins")
+}
+
+model CustomCommand {
+  id          String   @id @default(cuid())
+  guildId     String
+  name        String
+  trigger     String
+  response    String
+  type        String   @default("text") // text, embed, script, wasm
+  script      String?
+  ast         Json?
+  aliases     String[] @default([])
+  permissions String[] @default([])
+  cooldown    Int      @default(3)
+  uses        Int      @default(0)
+  enabled     Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  guild       Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@unique([guildId, name])
+  @@index([guildId, enabled])
+  @@map("custom_commands")
+}
+
+model RoleMenu {
+  id          String   @id @default(cuid())
+  guildId     String
+  channelId   String
+  messageId   String?  @unique
+  name        String
+  type        String   @default("button") // button, select, reaction
+  maxRoles    Int      @default(0)
+  components  Json
+  enabled     Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  options     RoleOption[]
+  guild       Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@map("role_menus")
+}
+
+model RoleOption {
+  id          String  @id @default(cuid())
+  menuId      String
+  roleId      String
+  label       String
+  emoji       String?
+  style       String  @default("Secondary")
+  description String?
+
+  menu        RoleMenu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@map("role_options")
+}
+
+model RankCardConfig {
+  id          String   @id @default(cuid())
+  guildId     String
+  name        String   @default("default")
+  background  String?
+  overlay     Float    @default(0.6)
+  primary     String   @default("#7c3aed")
+  accent      String   @default("#06ffa5")
+  font        String   @default("Inter")
+  layout      Json     @default("{}")
+  isDefault   Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+
+  guild       Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@map("rank_cards")
+}
+
+model Giveaway {
+  id            String   @id @default(cuid())
+  guildId       String
+  channelId     String
+  messageId     String?  @unique
+  hostId        String
+  prize         String
+  winnersCount  Int      @default(1)
+  entries       Int      @default(0)
+  status        String   @default("active") // active, ended, paused
+  requirements  Json?
+  endAt         DateTime
+  endedAt       DateTime?
+
+  createdAt     DateTime @default(now())
+
+  guild         Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  giveawayEntries GiveawayEntry[]
+
+  @@index([guildId, status])
+  @@map("giveaways")
+}
+
+model GiveawayEntry {
+  giveawayId  String
+  userId      String
+
+  enteredAt   DateTime @default(now())
+
+  giveaway    Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Cascade)
+  user        User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([giveawayId, userId])
+  @@map("giveaway_entries")
+}
+
+model Playlist {
+  id        String   @id @default(cuid())
+  guildId   String
+  userId    String
+  name      String
+  tracks    Json
+  public    Boolean  @default(false)
+  plays     Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild     Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId])
+  @@map("playlists")
+}
+
+model QuarantineRecord {
+  id          String   @id @default(cuid())
+  guildId     String
+  userId      String
+  reason      String
+  actorId     String?
+  deviceHash  String?
+  ipHash      String?
+  riskScore   Int      @default(80)
+  released    Boolean  @default(false)
+
+  createdAt   DateTime @default(now())
+  releasedAt  DateTime?
+
+  guild       Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+  user        User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, released])
+  @@map("quarantine_records")
+}
+
+model StoreItem {
+  id          String  @id @default(cuid())
+  guildId     String
+  name        String
+  description String?
+  price       BigInt
+  roleId      String?
+  durationSec Int?
+  stock       Int?
+  emoji       String?
+  enabled     Boolean @default(true)
+  sales       Int     @default(0)
+
+  createdAt   DateTime @default(now())
+
+  guild       Guild @relation(fields: [guildId], references: [id], onDelete: Cascade)
+
+  @@index([guildId, enabled])
+  @@map("store_items")
+}
+
+// Federation / Backup
+model FederationGroup {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  guilds    String[]
+  syncRoles Boolean  @default(true)
+  syncBans  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@map("federation_groups")
+}
+
+model WebhookRouter {
+  id        String   @id @default(cuid())
+  guildId   String
+  name      String
+  url       String
+  events    String[]
+  secret    String
+  active    Boolean  @default(true)
+  failures  Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@index([guildId])
+  @@map("webhook_routers")
+}
+
+// ============================================
+// 🌐 NEXUS GLOBAL ADMIN — v3.2
+// Global Control Center • User Restriction • Server Registry
+// ============================================
+
+model GlobalBan {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  username      String
+  avatar        String?
+  reason        String
+  evidence      String?
+  severity      Int      @default(5) // 1-5
+  bannedBy      String   // moderator userId
+  moderatorTag  String
+  active        Boolean  @default(true)
+  appealable    Boolean  @default(true)
+  expiresAt     DateTime?
+  // history
+  banCount      Int      @default(1)
+  lastIncident  DateTime @default(now())
+  // metadata
+  ipHash        String?
+  deviceHash    String?
+  relatedAlts   String[] @default([])
+  notes         String?
+  // audit
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  unbannedAt    DateTime?
+  unbannedBy    String?
+  unbanReason   String?
+
+  @@index([active])
+  @@index([userId])
+  @@index([bannedBy])
+  @@index([createdAt])
+  @@map("global_bans")
+}
+
+model GlobalBanHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String   // BAN, UNBAN, UPDATE, APPEAL_DENIED, ESCALATE
+  reason      String?
+  moderatorId String
+  moderatorTag String
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@map("global_ban_history")
+}
+
+model GlobalServer {
+  guildId       String   @id
+  name          String
+  icon          String?
+  ownerId       String
+  ownerTag      String?
+  memberCount   Int      @default(0)
+  botJoinedAt   DateTime @default(now())
+  leftAt        DateTime?
+  active        Boolean  @default(true)
+
+  // nexus config
+  premium       Boolean  @default(false)
+  premiumTier   Int      @default(0)
+  region        String?
+  locale        String   @default("en-US")
+  botVersion    String   @default("3.1.0-universal")
+
+  // modules
+  modulesEnabled String[] @default([])
+  aiEnabled     Boolean  @default(true)
+  securityEnabled Boolean @default(true)
+
+  // stats
+  totalCommands BigInt   @default(0)
+  totalAiRequests BigInt @default(0)
+  totalMessages BigInt   @default(0)
+  totalModerations Int   @default(0)
+  lastActivity  DateTime @default(now())
+
+  // health
+  healthScore   Int      @default(100)
+  riskLevel     Int      @default(1)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([active])
+  @@index([ownerId])
+  @@index([memberCount])
+  @@index([lastActivity])
+  @@map("global_servers")
+}
+
+model GlobalLog {
+  id            String   @id @default(cuid())
+  eventType     String   // SERVER_JOIN, SERVER_LEAVE, BAN, KICK, WARN, COMMAND, AI_ACTION, etc
+  severity      String   @default("info") // success, warning, info, error, ai, security
+  // source
+  guildId       String?
+  guildName     String?
+  channelId     String?
+  channelName   String?
+  // actor
+  userId        String?
+  username      String?
+  discriminator String?
+  avatar        String?
+  // moderator / executor
+  moderatorId   String?
+  moderatorTag  String?
+  // details
+  action        String?
+  command       String?
+  reason        String?
+  result        String?
+  metadata      Json?
+  // routing
+  logChannel    String?  // which nexus log channel to route to
+  // system
+  shardId       Int?
+  latencyMs     Int?
+  success       Boolean  @default(true)
+  // timestamps
+  createdAt     DateTime @default(now())
+
+  @@index([eventType, createdAt])
+  @@index([guildId, createdAt])
+  @@index([userId])
+  @@index([severity])
+  @@map("global_logs")
+}
+
+model NexusTeamMember {
+  userId        String   @id
+  username      String
+  discriminator String   @default("0")
+  avatar        String?
+  globalName    String?
+
+  // === Global Nexus Team System v2 ===
+  // Global Rank — hierarchy (inherits permissions downwards)
+  // 👑 Nexus Owner > 💎 Nexus Co-Owner > 🛡 Nexus Manager > ⚙ Nexus Developer > 🤖 Nexus AI Manager > 🛡️ Nexus Moderator > 🎫 Nexus Support > 👥 Nexus Team
+  rank          String   @default("TEAM") // OWNER, CO_OWNER, MANAGER, DEVELOPER, AI_MANAGER, MODERATOR, SUPPORT, TEAM
+  // legacy role field kept for compatibility
+  role          String   @default("TEAM")
+
+  // Status
+  status        String   @default("ACTIVE") // ACTIVE, SUSPENDED, REMOVED, INACTIVE
+  active        Boolean  @default(true) // legacy
+
+  // Audit
+  joinDate      DateTime @default(now())
+  addedBy       String?
+  addedByTag    String?
+  notes         String?  @db.Text
+
+  // Permissions — global, rank-inherited
+  permissions   String[] @default([])
+
+  // Security
+  twoFactorEnabled Boolean @default(false)
+
+  // Activity
+  lastSeen      DateTime @default(now())
+  lastActive    DateTime @default(now())
+  lastGuildId   String?
+  commandUses   Int      @default(0)
+
+  // Profile future-proof
+  badges        String[] @default([])
+  verified      Boolean  @default(true)
+  metadata      Json?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  history       NexusTeamHistory[]
+
+  @@index([rank, status])
+  @@index([role, active])
+  @@index([status])
+  @@map("nexus_team_members")
+}
+
+// Team audit history
+model NexusTeamHistory {
+  id            String   @id @default(cuid())
+  userId        String
+  action        String   // ADD, REMOVE, PROMOTE, DEMOTE, SUSPEND, ACTIVATE, PERMISSION_UPDATE, SYNC, AUTO_ASSIGN, AUTO_REVOKE
+  oldRank       String?
+  newRank       String?
+  reason        String?
+  moderatorId   String
+  moderatorTag  String
+  guildId       String?
+  metadata      Json?
+
+  createdAt     DateTime @default(now())
+
+  teamMember    NexusTeamMember @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([action])
+  @@map("nexus_team_history")
+}
+
+// Per-guild Nexus Team role tracking / protection
+model NexusTeamRoleState {
+  id            String   @id @default(cuid())
+  guildId       String   @unique
+  guildName     String?
+  roleId        String
+  roleName      String   @default("✨ Nexus Team")
+  color         Int      @default(0x06b6d4) // Professional Cyan
+  position      Int?
+  mentionable   Boolean  @default(false)
+  hoist         Boolean  @default(true)
+  // health
+  healthy       Boolean  @default(true)
+  lastRepair    DateTime?
+  lastSync      DateTime @default(now())
+  // stats
+  assignedCount Int      @default(0)
+  unauthorizedAttempts Int @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([guildId, healthy])
+  @@map("nexus_team_role_state")
+}
+
+model GlobalStatsSnapshot {
+  id                String   @id @default(cuid())
+  // totals
+  totalServers      Int
+  activeServers     Int
+  totalMembers      BigInt
+  totalUsers        BigInt
+  // activity
+  commandsToday     Int      @default(0)
+  commandsTotal     BigInt   @default(0)
+  aiRequestsToday   Int      @default(0)
+  aiRequestsTotal   BigInt   @default(0)
+  messagesToday     BigInt   @default(0)
+  // moderation
+  warningsToday     Int      @default(0)
+  bansToday         Int      @default(0)
+  ticketsOpen       Int      @default(0)
+  // system
+  cpuUsage          Float?
+  ramMb             Int?
+  latencyMs         Int?
+  shardsOnline      Int?
+  databaseStatus    String   @default("ok")
+  apiStatus         String   @default("ok")
+  gatewayStatus     String   @default("ok")
+  // errors
+  errorsToday       Int      @default(0)
+  // timestamp
+  capturedAt        DateTime @default(now())
+
+  @@index([capturedAt])
+  @@map("global_stats_snapshots")
+}
