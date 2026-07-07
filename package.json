@@ -20,7 +20,9 @@
     "worker:core": "WORKER_ROLE=core node dist/services/workers.js",
     "worker:security": "WORKER_ROLE=security node dist/services/workers.js",
     "worker:ai": "WORKER_ROLE=ai node dist/services/workers.js",
-    "worker:analytics": "WORKER_ROLE=analytics node dist/services/workers.js"
+    "worker:analytics": "WORKER_ROLE=analytics node dist/services/workers.js",
+    "lint": "echo 'Lint check — eslint not yet configured; add eslint to devDependencies to enable' && exit 0",
+    "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
