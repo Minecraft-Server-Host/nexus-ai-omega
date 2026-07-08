@@ -691,7 +691,7 @@ model NexusTeamRoleState {
   guildName     String?
   roleId        String
   roleName      String   @default("✨ Nexus Team")
-  color         Int      @default(0x06b6d4) // Professional Cyan
+  color         Int      @default(440020) // 0x06b6d4 Professional Cyan
   position      Int?
   mentionable   Boolean  @default(false)
   hoist         Boolean  @default(true)
