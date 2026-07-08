@@ -44,4 +44,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "fetch('http://localhost:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["sh", "-c", "timeout 60 ./node_modules/.bin/prisma db push --skip-generate --accept-data-loss; code=$?; if [ $code -ne 0 ]; then echo \"prisma db push exited with code $code (continuing startup; runtime queries will surface real schema errors)\"; fi; exec node dist/index.js"]
+CMD ["node", "dist/index.js"]
