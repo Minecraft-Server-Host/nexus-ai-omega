@@ -5,7 +5,8 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "echo TESTMARKER_BEFORE; ./node_modules/.bin/prisma db push --skip-generate --accept-data-loss; echo TESTMARKER_AFTER; node dist/index.js",
+    "preDeployCommand": ["./node_modules/.bin/prisma", "db", "push", "--skip-generate", "--accept-data-loss"],
+    "startCommand": "node dist/index.js",
     "healthcheckPath": "/healthz",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
