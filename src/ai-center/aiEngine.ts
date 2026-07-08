@@ -65,6 +65,11 @@ export class AIEngine {
   private guildProviderOverride = new Map<string, AIProviderId>(); // per-guild BYO key
   private guildApiKeys = new Map<string, {provider: AIProviderId, key: string}>(); // user-supplied keys
 
+  // ═══ AI-AutoGuild_Id-Save ════════════════════════════════════════════
+  // Persistent in-memory registry of every guild the bot is in.
+  // Populated on ClientReady and kept current on GuildCreate/GuildDelete.
+  private guildRegistry = new Map<string, { name: string; joinedAt: Date }>();
+
   private constructor(){}
 
   static getInstance(){ if(!AIEngine.instance) AIEngine.instance = new AIEngine(); return AIEngine.instance; }
@@ -144,6 +149,39 @@ export class AIEngine {
     if(guildId && this.guildProviderOverride.has(guildId)) return this.guildProviderOverride.get(guildId)!;
     return (process.env.AI_PROVIDER as AIProviderId) || 'auto';
   }
+
+  // ── Guild Registry API (AI-AutoGuild_Id-Save) ─────────────────────────
+  /** Save a guild ID + name when bot joins or on startup (idempotent). */
+  saveGuildId(guildId: string, guildName?: string): void {
+    const existing = this.guildRegistry.get(guildId);
+    this.guildRegistry.set(guildId, {
+      name: guildName ?? existing?.name ?? guildId,
+      joinedAt: existing?.joinedAt ?? new Date()
+    });
+    logger.debug({ guildId, total: this.guildRegistry.size }, '📡 AI-GuildRegistry: guild saved');
+  }
+
+  /** Remove a guild ID when bot is kicked/leaves. */
+  removeGuildId(guildId: string): void {
+    const had = this.guildRegistry.delete(guildId);
+    if (had) logger.debug({ guildId, total: this.guildRegistry.size }, '📡 AI-GuildRegistry: guild removed');
+  }
+
+  /** All guild IDs currently tracked by the AI engine. */
+  getAllGuildIds(): string[] {
+    return [...this.guildRegistry.keys()];
+  }
+
+  /** Number of guilds currently tracked. */
+  getGuildCount(): number {
+    return this.guildRegistry.size;
+  }
+
+  /** Full registry snapshot. */
+  getGuildRegistry(): Map<string, { name: string; joinedAt: Date }> {
+    return new Map(this.guildRegistry);
+  }
+
 
   private pickProvider(preferred?: AIProviderId, guildId?:string): ProviderClient {
     // 1. guild override
