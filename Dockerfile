@@ -7,20 +7,23 @@ FROM node:20-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache openssl libc6-compat
 
-# ── Dependencies ─────────────────────────────────────────────
+# ── Dependencies (prod only) ──────────────────────────────────
 FROM base AS deps
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm install --omit=dev --no-fund --legacy-peer-deps && npx prisma generate
+# prisma is in dependencies so it installs here; use local binary (not npx) to avoid downloading latest
+RUN npm install --omit=dev --no-fund --legacy-peer-deps && \
+    ./node_modules/.bin/prisma generate
 
-# ── Builder ──────────────────────────────────────────────────
+# ── Builder (all deps + compile) ──────────────────────────────
 FROM base AS builder
 COPY package*.json ./
 RUN npm install --no-fund --legacy-peer-deps
 COPY . .
-RUN npm run build
+# prisma generate runs here too so compiled code has up-to-date client types
+RUN ./node_modules/.bin/prisma generate && npm run build
 
-# ── Production image ─────────────────────────────────────────
+# ── Production image ──────────────────────────────────────────
 FROM base AS runner
 ENV NODE_ENV=production
 ENV PORT=8080
@@ -38,7 +41,6 @@ COPY                package.json      ./
 USER nexus
 EXPOSE 8080
 
-# Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "fetch('http://localhost:8080/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
