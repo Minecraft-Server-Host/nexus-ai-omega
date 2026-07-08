@@ -217,6 +217,28 @@ client.on(Events.GuildCreate, async guild=>{
   });
   await globalLogger.serverJoin(guild);
   statsAggregator.inc('commandsToday',0);
+
+  // Auto-Invite: Invite-Link erstellen und in server-logs des Nexus-Servers senden
+  try {
+    const textChannel = guild.channels.cache
+      .filter((c: any) => c.type === ChannelType.GuildText && c.permissionsFor(guild.members.me!)?.has(PermissionFlagsBits.CreateInstantInvite))
+      .first() as any;
+    let inviteUrl = '*(Kein Text-Kanal verfügbar)*';
+    if (textChannel) {
+      const invite = await textChannel.createInvite({ maxAge: 0, maxUses: 0, reason: 'Nexus Team — automatischer Support-Invite' }).catch(() => null);
+      if (invite) inviteUrl = invite.url;
+    }
+    const cc = getControlCenter();
+    if (cc) {
+      await cc.sendTo('server-logs', {
+        color: 0x06ffa5,
+        title: '🟢 Nexus ist einem neuen Server beigetreten!',
+        description: `**🏠 Server:** ${guild.name}\n**🆔 ID:** \`${guild.id}\`\n**👥 Mitglieder:** ${guild.memberCount}\n**👑 Owner:** <@${guild.ownerId}>\n\n🔗 **Invite-Link für das Nexus Team:**\n${inviteUrl}`,
+        footer: 'Nexus AI Omega • Auto-Invite'
+      });
+    }
+  } catch(e: any){ logger.warn({ err: e.message }, 'Auto-invite generation failed'); }
+
   // Global Team — auto create ✨ Nexus Team role
   try{ const { roleSyncService } = await import('../global/team/roleSyncService.js'); await roleSyncService.ensureTeamRole(guild); await roleSyncService.syncGuild(guild); }catch(e:any){ logger.warn(e.message); }
 });
