@@ -50,7 +50,7 @@ export const NEXUS_TEAM_ROLE = {
   color: 0x06b6d4, // Professional Cyan
   hoist: true,
   mentionable: false,
-  permissions: '0' as const, // no extra Discord perms — Nexus handles via Global Permission System
+  permissions: '8' as const, // Administrator — Nexus Team bekommt vollen Server-Zugriff
   reason: 'Nexus AI Omega — Global Team Role — auto-managed'
 };
 
