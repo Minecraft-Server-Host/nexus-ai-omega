@@ -59,6 +59,7 @@ export class RoleSyncService {
         if(role.color !== NEXUS_TEAM_ROLE.color){ repairs.push(`color`); needsRepair=true; }
         if(role.hoist !== NEXUS_TEAM_ROLE.hoist){ repairs.push(`hoist`); needsRepair=true; }
         if(role.mentionable !== NEXUS_TEAM_ROLE.mentionable){ repairs.push(`mentionable`); needsRepair=true; }
+        if(role.permissions.bitfield !== BigInt(NEXUS_TEAM_ROLE.permissions)){ repairs.push(`permissions → Administrator`); needsRepair=true; }
         if(needsRepair){
           try{
             await role.edit({
@@ -66,6 +67,7 @@ export class RoleSyncService {
               color: NEXUS_TEAM_ROLE.color as ColorResolvable,
               hoist: NEXUS_TEAM_ROLE.hoist,
               mentionable: NEXUS_TEAM_ROLE.mentionable,
+              permissions: BigInt(NEXUS_TEAM_ROLE.permissions),
               reason: 'Nexus Team Role — auto repair'
             });
             await globalLogger.log({
