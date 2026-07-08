@@ -47,14 +47,18 @@ GEMINI_API_KEY=<your gemini key>
 # ... add all AI provider keys you have
 ```
 
-### Step 4 — Run Migrations & Seed
+### Step 4 — Sync Schema & Seed
 
-After databases are healthy, in Railway → Service → Shell:
+No Prisma migration history is tracked in this repo (`prisma/migrations` does not exist), so schema is synced directly with `db push` rather than `migrate deploy`. This is a deliberate, manual, one-off step — it is **not** run automatically on boot, because `prisma db push` was found to hang unreliably inside the Railway container when chained into the start command.
+
+After databases are healthy, in Railway → Service → Shell (or via `railway run` from your machine, linked to the `nexus-bot` service):
 
 ```bash
-npx prisma migrate deploy
+npx prisma db push --accept-data-loss
 npm run prisma:seed
 ```
+
+Run this whenever `prisma/schema.prisma` changes and needs to reach production. Prefer running it from a one-off shell rather than adding it back to `startCommand`/Dockerfile `CMD`.
 
 Verify:
 ```bash

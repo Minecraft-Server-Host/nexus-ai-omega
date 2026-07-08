@@ -58,8 +58,9 @@ All items must be ✅ before marking deploy successful.
 - Check Gateway intents are enabled in Discord Dev Portal (Message Content, Server Members)
 
 ### Database connection error
-- Verify `DATABASE_URL` and `DIRECT_URL` are set
-- Run `npx prisma migrate deploy` if tables missing
+- Verify `DATABASE_URL` is set (no `DIRECT_URL` is used — removed from `prisma/schema.prisma` since nothing set it)
+- If tables are missing, run `npx prisma db push --accept-data-loss` manually from a Railway shell (`railway run` or Service → Shell). Do **not** add this to `startCommand`/Dockerfile `CMD` — it has been observed to hang indefinitely inside the container, which blocks the bot from ever starting and fails the deploy healthcheck.
+- There is no tracked Prisma migration history (`prisma/migrations` doesn't exist) — schema changes are pushed directly with `db push`, not `migrate deploy`.
 - Check PostgreSQL service is healthy in Railway
 
 ### AI providers not working
