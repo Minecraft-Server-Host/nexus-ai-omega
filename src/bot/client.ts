@@ -466,9 +466,6 @@ client.on(Events.InteractionCreate, async interaction => {
         const level = interaction.options.getInteger('level');
         const gid = interaction.guildId!;
         if (level) {
-          const { setDefcon } = await import('../security-center/securityManager.js');
-          // use singleton
-          const { securityManager } = await import('../security-center/securityManager.js');
           securityManager.setDefcon(gid, level as any);
           await globalLogger.log({ eventType:'SECURITY_ALERT', severity: level<=2?'error':'warning', guildId:gid, guildName:interaction.guild?.name, userId:interaction.user.id, username:interaction.user.tag, action:'DEFCON_CHANGE', result:`DEFCON ${level}`, metadata:{level} });
           await interaction.reply(`🛡️ DEFCON set to **${level}** — ${level===1?'PANIC LOCKDOWN': level===5?'Normal': 'Elevated'}`);

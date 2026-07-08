@@ -184,7 +184,7 @@ export class RoleSyncService {
     let totalAdded=0, totalRemoved=0, totalChecked=0;
     for(const g of guilds){
       const r = await this.syncGuild(g).catch(()=>null);
-      if(r?.ok){ totalAdded+=r.added; totalRemoved+=r.removed; totalChecked+=r.checked; }
+      if(r?.ok){ totalAdded+=(r.added??0); totalRemoved+=(r.removed??0); totalChecked+=(r.checked??0); }
       // space out to avoid global rate limit
       await new Promise(res=>setTimeout(res, 1800));
     }
