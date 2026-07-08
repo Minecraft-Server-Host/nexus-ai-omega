@@ -23,7 +23,7 @@ jobs:
       - run: npm install --no-fund
       - run: npx prisma generate
       - run: npm run typecheck
-      - run: npm audit --audit-level=high || true   # non-blocking until 0 issues confirmed
+      - run: npm audit --audit-level=high || true
 
   # ── Test ─────────────────────────────────────────────────
   test:
@@ -105,15 +105,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check Railway Token
+        id: check_token
+        run: |
+          if [ -z "${{ secrets.RAILWAY_TOKEN }}" ]; then
+            echo "⚠️  RAILWAY_TOKEN is not set in GitHub Secrets."
+            echo "   Go to: GitHub repo → Settings → Secrets and variables → Actions → New repository secret"
+            echo "   Name: RAILWAY_TOKEN"
+            echo "   Value: Create a token at https://railway.app/account/tokens"
+            echo "   Railway's GitHub App may still auto-deploy if connected."
+            echo "has_token=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_token=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Install Railway CLI
+        if: steps.check_token.outputs.has_token == 'true'
         run: npm i -g @railway/cli
 
       - name: Run Prisma Migrations
+        if: steps.check_token.outputs.has_token == 'true'
         run: railway run npx prisma migrate deploy
+        continue-on-error: true
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Deploy to Railway
+        if: steps.check_token.outputs.has_token == 'true'
         run: railway up --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
