@@ -478,23 +478,75 @@ client.on(Events.InteractionCreate, async interaction => {
       }
       if (commandName === 'ban') {
         const user = interaction.options.getUser('user', true);
-        const reason = interaction.options.getString('reason') ?? 'Nexus AI Moderation';
-        await globalLogger.log({ eventType:'BAN', severity:'error', guildId: interaction.guildId!, guildName: interaction.guild?.name, userId: user.id, username: user.tag, moderatorId: interaction.user.id, moderatorTag: interaction.user.tag, action:'BAN', reason, result:'executed (sim)' });
-        statsAggregator.inc('bansToday',1);
-        await interaction.reply(`🔨 Banned ${user.tag} — ${reason} (simulated safe mode)`);
+        const reason = interaction.options.getString('reason') ?? 'No reason provided';
+        if (!interaction.guild) return interaction.reply({ ephemeral:true, content:'❌ This command must be used in a server.' });
+        if (!interaction.guild.members.me?.permissions.has(PermissionFlagsBits.BanMembers)) {
+          return interaction.reply({ ephemeral:true, content:'❌ I need the **Ban Members** permission in this server.' });
+        }
+        try {
+          await interaction.guild.members.ban(user.id, { reason: `${reason} | Mod: ${interaction.user.tag}` });
+          await globalLogger.log({ eventType:'BAN', severity:'error', guildId: interaction.guildId!, guildName: interaction.guild?.name, userId: user.id, username: user.tag, moderatorId: interaction.user.id, moderatorTag: interaction.user.tag, action:'BAN', reason, result:'executed' });
+          statsAggregator.inc('bansToday',1);
+          const banEmbed = new EmbedBuilder()
+            .setColor(0xef4444)
+            .setTitle('🔨 User Banned')
+            .addFields(
+              { name:'👤 User', value:`${user.tag}
+\`${user.id}\``, inline:true },
+              { name:'🛡️ Moderator', value:interaction.user.tag, inline:true },
+              { name:'📝 Reason', value:reason, inline:false }
+            )
+            .setTimestamp();
+          await interaction.reply({ embeds:[banEmbed] });
+        } catch (e:any) {
+          await interaction.reply({ ephemeral:true, content:`❌ Could not ban ${user.tag}: ${e.message}` });
+        }
         return;
       }
       if (commandName === 'timeout') {
         const user = interaction.options.getUser('user', true);
         const minutes = interaction.options.getInteger('minutes') ?? 10;
-        await globalLogger.log({ eventType:'TIMEOUT', severity:'warning', guildId: interaction.guildId!, guildName: interaction.guild?.name, userId:user.id, username:user.tag, moderatorId:interaction.user.id, moderatorTag:interaction.user.tag, action:'TIMEOUT', result:`${minutes}m`});
-        await interaction.reply(`⏳ Timed out ${user.tag} for ${minutes}m`);
+        if (!interaction.guild) return interaction.reply({ ephemeral:true, content:'❌ This command must be used in a server.' });
+        if (!interaction.guild.members.me?.permissions.has(PermissionFlagsBits.ModerateMembers)) {
+          return interaction.reply({ ephemeral:true, content:'❌ I need the **Timeout Members** permission in this server.' });
+        }
+        const toMember = await interaction.guild.members.fetch(user.id).catch(()=>null);
+        if (!toMember) return interaction.reply({ ephemeral:true, content:`❌ ${user.tag} is not in this server.` });
+        if (!toMember.moderatable) return interaction.reply({ ephemeral:true, content:`❌ I cannot timeout ${user.tag} — they likely have a higher role than me.` });
+        try {
+          await toMember.timeout(minutes * 60 * 1000, `Timeout by ${interaction.user.tag}`);
+          await globalLogger.log({ eventType:'TIMEOUT', severity:'warning', guildId: interaction.guildId!, guildName: interaction.guild?.name, userId:user.id, username:user.tag, moderatorId:interaction.user.id, moderatorTag:interaction.user.tag, action:'TIMEOUT', result:`${minutes}m`});
+          const toEmbed = new EmbedBuilder()
+            .setColor(0xf59e0b)
+            .setTitle('⏳ User Timed Out')
+            .addFields(
+              { name:'👤 User', value:`${user.tag}
+\`${user.id}\``, inline:true },
+              { name:'🛡️ Moderator', value:interaction.user.tag, inline:true },
+              { name:'⏱️ Duration', value:`${minutes} Minute${minutes!==1?'n':''}`, inline:true }
+            )
+            .setTimestamp();
+          await interaction.reply({ embeds:[toEmbed] });
+        } catch (e:any) {
+          await interaction.reply({ ephemeral:true, content:`❌ Timeout failed: ${e.message}` });
+        }
         return;
       }
       if (commandName === 'purge') {
         const amount = interaction.options.getInteger('amount', true);
-        await globalLogger.log({ eventType:'COMMAND_EXECUTED', severity:'warning', guildId: interaction.guildId!, guildName: interaction.guild?.name, userId: interaction.user.id, username: interaction.user.tag, command:'purge', action:'PURGE', result:`${amount} msgs`, channelId: interaction.channelId, channelName: (interaction.channel as any)?.name });
-        await interaction.reply({ ephemeral:true, content:`🧹 Purged ${amount} messages (simulation).`});
+        if (!interaction.guild) return interaction.reply({ ephemeral:true, content:'❌ This command must be used in a server.' });
+        if (!interaction.guild.members.me?.permissions.has(PermissionFlagsBits.ManageMessages)) {
+          return interaction.reply({ ephemeral:true, content:'❌ I need the **Manage Messages** permission in this server.' });
+        }
+        await interaction.deferReply({ ephemeral:true });
+        try {
+          const deleted = await (interaction.channel as any)?.bulkDelete(amount, true);
+          const count = deleted?.size ?? 0;
+          await globalLogger.log({ eventType:'COMMAND_EXECUTED', severity:'warning', guildId: interaction.guildId!, guildName: interaction.guild?.name, userId: interaction.user.id, username: interaction.user.tag, command:'purge', action:'PURGE', result:`${count} msgs`, channelId: interaction.channelId, channelName: (interaction.channel as any)?.name });
+          await interaction.editReply({ content:`🧹 Deleted **${count}** message${count!==1?'s':''}. (Note: Discord's bulk-delete only works for messages younger than 14 days.)` });
+        } catch (e:any) {
+          await interaction.editReply({ content:`❌ Could not purge: ${e.message}` });
+        }
         return;
       }
       if (commandName === 'serverbuild') {
