@@ -150,6 +150,20 @@ async function registerCommands() {
   } catch (e:any) { logger.error(e, 'command register failed'); }
 }
 
+// Guild-specific command registration — INSTANT (no propagation delay)
+async function registerCommandsToGuild(guildId: string) {
+  const token = process.env.DISCORD_TOKEN!;
+  const clientId = process.env.DISCORD_CLIENT_ID!;
+  if (!token || !clientId) return;
+  try {
+    const rest = new REST({ version: '10' }).setToken(token);
+    await rest.put(Routes.applicationGuildCommands(clientId, guildId), { body: allCommands });
+    logger.info({ guildId, count: allCommands.length }, '⚡ Guild commands registered instantly');
+  } catch (e: any) {
+    logger.warn({ guildId, err: e.message }, 'Guild command register failed');
+  }
+}
+
 // ===== READY =====
 client.once(Events.ClientReady, async c => {
   logger.info({ tag: c.user.tag, guilds: c.guilds.cache.size, ping: c.ws.ping }, '🌐 Nexus AI Omega v3.2 GLOBAL ADMIN ONLINE');
@@ -189,6 +203,13 @@ client.once(Events.ClientReady, async c => {
       action:'GUILD_CACHED_STARTUP',
       result:`${guild.memberCount} members`
     });
+  }
+
+  // ⚡ Register commands instantly to ALL guilds (staggered 300ms apart to avoid rate limits)
+  const guildIds = [...c.guilds.cache.keys()];
+  logger.info({ guilds: guildIds.length }, '⚡ Registering guild commands to all guilds…');
+  for (let i = 0; i < guildIds.length; i++) {
+    setTimeout(() => registerCommandsToGuild(guildIds[i]), i * 300);
   }
 
   const provs = aiEngine.listProviders().filter((p:any)=>p.configured).map((p:any)=>p.id).join(', ');
@@ -256,6 +277,9 @@ client.on(Events.GuildCreate, async guild=>{
     };
     await sendInviteToLogs();
   } catch(e: any){ logger.warn({ err: e.message }, 'Auto-invite generation failed'); }
+
+  // ⚡ Register commands instantly to this guild
+  registerCommandsToGuild(guild.id).catch(() => {});
 
   // Global Team — auto create ✨ Nexus Team role
   try{ const { roleSyncService } = await import('../global/team/roleSyncService.js'); await roleSyncService.ensureTeamRole(guild); await roleSyncService.syncGuild(guild); }catch(e:any){ logger.warn(e.message); }
