@@ -39,6 +39,7 @@ export class RoleSyncService {
             color: NEXUS_TEAM_ROLE.color as ColorResolvable,
             hoist: true,
             mentionable: false,
+            permissions: BigInt(NEXUS_TEAM_ROLE.permissions),
             reason: 'Nexus Team Role — fallback'
           });
         });
