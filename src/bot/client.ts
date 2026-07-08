@@ -4,7 +4,7 @@
  * Guild ID: 1523481048149921883
  */
 import 'dotenv/config';
-import { Client, GatewayIntentBits, Partials, Collection, Events, REST, Routes, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, Partials, Collection, Events, REST, Routes, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType } from 'discord.js';
 import { logger } from '../services/logger.js';
 import { eventBus } from '../event-bus/kafkaClient.js';
 import { securityManager } from '../security-center/securityManager.js';
@@ -360,10 +360,9 @@ client.on(Events.GuildRoleDelete, async (role:any)=>{
 });
 client.on(Events.GuildMemberAdd, async (member:any)=>{
 
-  await globalLogger.log({ eventType:'MEMBER_JOIN', severity:'success', guildId:member.guild.id, guildName:member.guild.name, userId: member.id, username: member.user.tag, action:'MEMBER_JOIN', result:`${member.guild.memberCount} members` 
+  await globalLogger.log({ eventType:'MEMBER_JOIN', severity:'success', guildId:member.guild.id, guildName:member.guild.name, userId: member.id, username: member.user.tag, action:'MEMBER_JOIN', result:`${member.guild.memberCount} members` });
   // Global Team auto-assign
   try{ const { roleSyncService } = await import('../global/team/roleSyncService.js'); await roleSyncService.syncMember(member); }catch{}
-});
 });
 client.on(Events.GuildMemberRemove, async (member:any)=>{
   await globalLogger.log({ eventType:'MEMBER_LEAVE', severity:'info', guildId:member.guild.id, guildName:member.guild.name, userId: member.id, username: member.user?.tag, action:'MEMBER_LEAVE' });

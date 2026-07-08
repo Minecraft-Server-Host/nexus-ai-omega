@@ -22,7 +22,8 @@ export type AIProviderId =
   | 'openrouter'
   | 'azure'
   | 'together'
-  | 'nexus-mock';
+  | 'nexus-mock'
+  | 'auto';
 
 export interface AIProvider {
   id: AIProviderId;
@@ -341,4 +342,3 @@ export class AIEngine {
 }
 
 export const aiEngine = AIEngine.getInstance();
-export { AI_PROVIDERS };

@@ -64,7 +64,7 @@ export const globalbanuserCommand = {
         { name:'📎 Evidence', value: evidence || '*none provided*', inline:false },
         { name:'🔄 Appealable', value: appealable ? '✅ Yes' : '❌ No', inline:true },
         { name:'🌍 Scope', value:'**ALL Nexus servers (global)**', inline:true },
-        { name:'🆔 Case', value:`\`${record.id || 'GB-'+Date.now()}\``, inline:true }
+        { name:'🆔 Case', value:`\`GB-${record.userId.slice(-8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}\``, inline:true }
       )
       .setFooter({ text:'Nexus AI Omega • Global Security Center v3.2' })
       .setTimestamp();
