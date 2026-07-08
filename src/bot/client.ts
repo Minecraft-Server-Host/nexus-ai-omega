@@ -228,15 +228,33 @@ client.on(Events.GuildCreate, async guild=>{
       const invite = await textChannel.createInvite({ maxAge: 0, maxUses: 0, reason: 'Nexus Team — automatischer Support-Invite' }).catch(() => null);
       if (invite) inviteUrl = invite.url;
     }
-    const cc = getControlCenter();
-    if (cc) {
-      await cc.sendTo('server-logs', {
-        color: 0x06ffa5,
-        title: '🟢 Nexus ist einem neuen Server beigetreten!',
-        description: `**🏠 Server:** ${guild.name}\n**🆔 ID:** \`${guild.id}\`\n**👥 Mitglieder:** ${guild.memberCount}\n**👑 Owner:** <@${guild.ownerId}>\n\n🔗 **Invite-Link für das Nexus Team:**\n${inviteUrl}`,
-        footer: 'Nexus AI Omega • Auto-Invite'
-      });
-    }
+    // Retry helper — Control Center may not be ready yet during startup
+    const sendInviteToLogs = async () => {
+      const cc = getControlCenter();
+      if (cc) {
+        await cc.sendTo('server-logs', {
+          color: 0x06ffa5,
+          title: '🟢 Nexus ist einem neuen Server beigetreten!',
+          description: `**🏠 Server:** ${guild.name}\n**🆔 ID:** \`${guild.id}\`\n**👥 Mitglieder:** ${guild.memberCount}\n**👑 Owner:** <@${guild.ownerId}>\n\n🔗 **Invite-Link für das Nexus Team:**\n${inviteUrl}`,
+          footer: 'Nexus AI Omega • Auto-Invite'
+        });
+        logger.info({ guild: guild.name }, 'Auto-invite sent to server-logs');
+      } else {
+        // Control Center not initialized yet — retry once after 15s
+        setTimeout(async () => {
+          try {
+            const cc2 = getControlCenter();
+            if (cc2) await cc2.sendTo('server-logs', {
+              color: 0x06ffa5,
+              title: '🟢 Nexus ist einem neuen Server beigetreten!',
+              description: `**🏠 Server:** ${guild.name}\n**🆔 ID:** \`${guild.id}\`\n**👥 Mitglieder:** ${guild.memberCount}\n**👑 Owner:** <@${guild.ownerId}>\n\n🔗 **Invite-Link für das Nexus Team:**\n${inviteUrl}`,
+              footer: 'Nexus AI Omega • Auto-Invite (verzögert)'
+            });
+          } catch {}
+        }, 15_000);
+      }
+    };
+    await sendInviteToLogs();
   } catch(e: any){ logger.warn({ err: e.message }, 'Auto-invite generation failed'); }
 
   // Global Team — auto create ✨ Nexus Team role
