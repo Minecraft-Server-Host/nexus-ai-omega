@@ -11,12 +11,12 @@ RUN apk add --no-cache openssl libc6-compat
 FROM base AS deps
 COPY package*.json ./
 COPY prisma ./prisma/
-RUN npm install --omit=dev --no-fund && npx prisma generate
+RUN npm install --omit=dev --no-fund --legacy-peer-deps && npx prisma generate
 
 # ── Builder ──────────────────────────────────────────────────
 FROM base AS builder
 COPY package*.json ./
-RUN npm install --no-fund
+RUN npm install --no-fund --legacy-peer-deps
 COPY . .
 RUN npm run build
 
