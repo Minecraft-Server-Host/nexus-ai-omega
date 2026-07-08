@@ -195,6 +195,8 @@ client.once(Events.ClientReady, async c => {
       memberCount: guild.memberCount,
       locale: guild.preferredLocale
     });
+    // AI-AutoGuild_Id-Save: alle bekannten Guilds beim Start in den AI-Engine Registry speichern
+    aiEngine.saveGuildId(id, guild.name);
     await globalLogger.log({
       eventType:'SYSTEM',
       severity:'info',
@@ -228,6 +230,8 @@ client.once(Events.ClientReady, async c => {
 // ===== GUILD JOIN / LEAVE — GLOBAL SERVER DATABASE =====
 client.on(Events.GuildCreate, async guild=>{
   logger.info({ guild: guild.name, id: guild.id, members: guild.memberCount }, '➕ Joined new guild');
+  // AI-AutoGuild_Id-Save: neue Guild sofort in AI-Engine Registry eintragen
+  aiEngine.saveGuildId(guild.id, guild.name);
   await serverRegistry.upsertServer({
     guildId: guild.id,
     name: guild.name,
@@ -286,6 +290,8 @@ client.on(Events.GuildCreate, async guild=>{
 });
 client.on(Events.GuildDelete, async guild=>{
   logger.warn({ guild: guild.name, id: guild.id }, '➖ Left guild');
+  // AI-AutoGuild_Id-Save: Guild aus AI-Engine Registry entfernen
+  aiEngine.removeGuildId(guild.id);
   await serverRegistry.markLeft(guild.id, guild.name);
 });
 
