@@ -211,14 +211,60 @@ export class AIEngine {
   }
 
   // --- module implementations (same as v3.0, shortened) ---
-  private async runHybridAutoMod(text:string, ctx?:any){
-    const banned=['n-word','kys','dox','nuke','@everyone spam'];
-    const hit=banned.find(w=>text.toLowerCase().includes(w.split('-')[0]));
-    let score = hit ? 0.92 : 0.08;
-    let aiEvaluated=false;
-    if(!hit && text.length>12){ aiEvaluated=true; const toxicHints=['hate','idiot','stupid','trash','kill']; const hits=toxicHints.filter(h=>text.toLowerCase().includes(h)).length; score=Math.min(0.89,hits*0.28); }
-    const action = score>0.85?'delete':score>0.65?'timeout':score>0.45?'warn':'allow';
-    return { action, score:Number(score.toFixed(3)), triggers: hit?[hit]:[], reason: hit?'regex_blacklist':aiEvaluated?'neuro_symbolic_llm':'clean', aiEvaluated };
+  private async runHybridAutoMod(text: string, ctx?: any) {
+    const lower = text.toLowerCase();
+
+    // Sofort-Block: schwere Beleidigungen & Slurs (score 0.95 → delete)
+    const banned = [
+      // Homophobe Beleidigungen
+      'faggot','fag','dyke','tranny','trannies','homo','queer freak',
+      // Ableistische Beleidigungen
+      'retard','retarded','spastic','mongoloid',
+      // Rassistische Slurs (ohne n-word — wurde entfernt)
+      'spic','chink','gook','kike','wetback','beaner','raghead',
+      'towelhead','zipperhead','jungle bunny','coon','porch monkey',
+      'jigaboo','tar baby','sandnigger','sand nigger','white trash','cracker',
+      // Sexistische Beleidigungen
+      'whore','slut','cunt','skank','cum dumpster',
+      // Todes-/Gewaltdrohungen
+      'kys','kill yourself','go kill yourself','end yourself',
+      'hang yourself','rope yourself','i will kill you',
+      "i'll kill you",'you will die','i hope you die',
+      'go die','kill urself','kys rn',
+      // Doxxing / Swatting
+      'dox','doxx','swat you','swat ur house','@everyone spam',
+      // Schwere allgemeine Beleidigungen
+      'motherfucker','son of a bitch','piece of shit',
+      'fucking idiot','dumb cunt','stupid whore','fat bitch',
+      'ugly bitch','go fuck yourself',
+    ];
+
+    const hit = banned.find(w => lower.includes(w));
+    let score = hit ? 0.95 : 0.08;
+    let aiEvaluated = false;
+
+    if (!hit && text.length > 12) {
+      aiEvaluated = true;
+      // Mittlere Toxizität — Warn / Timeout
+      const toxicHints = [
+        'hate','idiot','stupid','trash','kill','ugly','disgusting',
+        'pathetic','loser','worthless','shut up','stfu',
+        'fuck you','go fuck','asshole','dickhead','dumbass',
+        'moron','bastard','piss off','screw you','jerk',
+        'freak','weirdo','creep','clown','rat','snitch',
+      ];
+      const hits = toxicHints.filter(h => lower.includes(h)).length;
+      score = Math.min(0.89, hits * 0.28);
+    }
+
+    const action = score > 0.85 ? 'delete' : score > 0.65 ? 'timeout' : score > 0.45 ? 'warn' : 'allow';
+    return {
+      action,
+      score: Number(score.toFixed(3)),
+      triggers: hit ? [hit] : [],
+      reason: hit ? 'regex_blacklist' : aiEvaluated ? 'neuro_symbolic_llm' : 'clean',
+      aiEvaluated
+    };
   }
   private async runTicketAssistant(prompt:string, ctx?:any){
     const faq=[{q:'how to verify',a:'Click #verify and complete WebAuthn passkey.'},{q:'role shop',a:'Use /shop — buy roles with server coins.'},{q:'tickets',a:'Open a ticket via Ticket Tool panel.'}];
