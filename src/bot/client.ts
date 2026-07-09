@@ -550,7 +550,7 @@ client.on(Events.InteractionCreate, async interaction => {
           .setDescription(d?.concept || prompt.slice(0,200))
           .setColor(0x7c3aed)
           .addFields(
-            { name: '🎨 Palette', value: (d?.palette||[]).map((c:string)=>``${c}``).join(' ') || '—', inline: false },
+            { name: '🎨 Palette', value: (d?.palette||[]).map((c:string)=>'`'+c+'`').join(' ') || '—', inline: false },
             { name: '🔤 Font', value: d?.font || 'Inter', inline: true },
             { name: '📐 Layout', value: (d?.layout||[]).slice(0,5).map((l:string)=>`• ${l}`).join('\n') || '—', inline: false },
             { name: '🧩 Components', value: (d?.components||[]).slice(0,6).join(', ') || '—', inline: false }
