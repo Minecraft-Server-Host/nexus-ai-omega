@@ -4,7 +4,7 @@
  * Guild ID: 1523481048149921883
  */
 import 'dotenv/config';
-import { Client, GatewayIntentBits, Partials, Collection, Events, REST, Routes, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType } from 'discord.js';
+import { Client, GatewayIntentBits, Partials, Collection, Events, REST, Routes, SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ChannelType, ButtonBuilder, ActionRowBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } from 'discord.js';
 import { logger } from '../services/logger.js';
 import { eventBus } from '../event-bus/kafkaClient.js';
 import { securityManager } from '../security-center/securityManager.js';
@@ -106,7 +106,7 @@ const baseCommands = [
   new SlashCommandBuilder().setName('purge').setDescription('Bulk delete')
     .addIntegerOption(o=>o.setName('amount').setDescription('1-100').setMinValue(1).setMaxValue(100).setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-  new SlashCommandBuilder().setName('serverbuild').setDescription('AI generate full server')
+  new SlashCommandBuilder().setName('serverbuild').setDescription('AI generate & baut kompletten Server (mit Vorschau + Bestätigung)')
     .addStringOption(o=>o.setName('theme').setDescription('e.g. Valorant esports 5000 users').setRequired(true))
     .addStringOption(o=>o.setName('provider').setDescription('AI Provider').addChoices(
       {name:'Auto', value:'auto'},
@@ -114,7 +114,8 @@ const baseCommands = [
       {name:'Claude 3.5', value:'anthropic'},
       {name:'Gemini 1.5 Pro', value:'google'},
       {name:'Grok', value:'xai'}
-    )),
+    ))
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
   new SlashCommandBuilder().setName('level').setDescription('Show your Nexus level')
     .addUserOption(o=>o.setName('user').setDescription('Check user')),
   new SlashCommandBuilder().setName('ticket').setDescription('Open AI support ticket')
@@ -133,6 +134,12 @@ const baseCommands = [
     .addBooleanOption(o=>o.setName('image').setDescription('Echtes Vorschaubild generieren (DALL·E, falls verfügbar)')),
   teamCommand.data
 ];
+
+// In-Memory Speicher für ausstehende AI-Server-Builds (Vorschau → Bestätigen/Bearbeiten/Ablehnen)
+interface PendingServerBuild { plan: any; theme: string; provider?: string; userId: string; guildId: string; createdAt: number; }
+const pendingServerBuilds = new Map<string, PendingServerBuild>();
+const SB_TTL_MS = 15 * 60 * 1000; // 15 Minuten
+setInterval(()=>{ const now = Date.now(); for (const [k,v] of pendingServerBuilds) if (now - v.createdAt > SB_TTL_MS) pendingServerBuilds.delete(k); }, 5*60*1000);
 
 // merge global admin commands
 const globalAdminCommands = [
@@ -671,6 +678,7 @@ client.on(Events.InteractionCreate, async interaction => {
         return;
       }
       if (commandName === 'serverbuild') {
+        if (!interaction.inGuild()) { await interaction.reply({ ephemeral:true, content:'⚠️ Nur in einem Server nutzbar.' }); return; }
         await interaction.deferReply();
         const theme = interaction.options.getString('theme', true);
         const provider = interaction.options.getString('provider') ?? undefined;
@@ -680,12 +688,15 @@ client.on(Events.InteractionCreate, async interaction => {
           guildName: interaction.guild?.name,
           userId: interaction.user.id,
           username: interaction.user.tag,
-          action:'AI_SERVER_BUILDER',
+          action:'AI_SERVER_BUILDER_PREVIEW',
           command:'serverbuild',
           result: res.model,
           metadata:{ theme, latency: res.latencyMs }
         });
-        await interaction.editReply({ content: `🏗️ **AI Server Builder [${res.model}]**\n\`\`\`json\n${JSON.stringify(res.output, null, 2).slice(0,1850)}\n\`\`\``});
+        const token = Math.random().toString(36).slice(2,10);
+        pendingServerBuilds.set(token, { plan: res.output, theme, provider, userId: interaction.user.id, guildId: interaction.guildId!, createdAt: Date.now() });
+        const { embed, row } = buildServerPreview(res.output, res.model, token);
+        await interaction.editReply({ embeds: [embed], components: [row] });
         return;
       }
       if (commandName === 'level') {
@@ -736,6 +747,86 @@ client.on(Events.InteractionCreate, async interaction => {
       await interaction.reply({ ephemeral:true, content:'🔐 Nexus Team action received — logged to audit.' });
       return;
     }
+
+    // ===== AI Server Builder — Bestätigen / Bearbeiten / Ablehnen =====
+    if(id.startsWith('sb_confirm_') || id.startsWith('sb_edit_') || id.startsWith('sb_reject_')){
+      const token = id.split('_').slice(2).join('_');
+      const pending = pendingServerBuilds.get(token);
+      if(!pending){
+        await interaction.reply({ ephemeral:true, content:'⌛ Diese Vorschau ist abgelaufen oder wurde bereits verarbeitet. Führe /serverbuild erneut aus.' });
+        return;
+      }
+      const canManage = interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild);
+      if(interaction.user.id !== pending.userId && !canManage){
+        await interaction.reply({ ephemeral:true, content:'🔒 Nur der Ersteller oder ein Admin mit "Server verwalten" kann diese Vorschau bestätigen.' });
+        return;
+      }
+
+      if(id.startsWith('sb_reject_')){
+        pendingServerBuilds.delete(token);
+        await interaction.update({ content:'❌ **AI Server Build abgelehnt.** Nichts wurde verändert.', embeds:[], components:[] });
+        await globalLogger.aiAction({ guildId: pending.guildId, guildName: interaction.guild?.name, userId: interaction.user.id, username: interaction.user.tag, action:'AI_SERVER_BUILDER_REJECT', command:'serverbuild', result:'rejected', metadata:{ theme: pending.theme } });
+        return;
+      }
+
+      if(id.startsWith('sb_edit_')){
+        const modal = new ModalBuilder().setCustomId(`sb_editmodal_${token}`).setTitle('Server-Design bearbeiten');
+        const input = new TextInputBuilder()
+          .setCustomId('sb_edit_instructions')
+          .setLabel('Was soll geändert werden?')
+          .setStyle(TextInputStyle.Paragraph)
+          .setPlaceholder('z.B. "Mehr Voice-Kanäle, weniger Rollen, Fokus auf Anime-Theme statt Gaming"')
+          .setRequired(true)
+          .setMaxLength(500);
+        modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input));
+        await interaction.showModal(modal);
+        return;
+      }
+
+      if(id.startsWith('sb_confirm_')){
+        const guild = interaction.guild;
+        if(!guild){ await interaction.reply({ ephemeral:true, content:'⚠️ Server nicht gefunden.' }); return; }
+        await interaction.update({ content:'🏗️ **Baue Server...** Bitte warten (Rollen & Kanäle werden erstellt).', embeds:[], components:[] });
+        const { created, failed } = await applyServerPlan(guild, pending.plan);
+        pendingServerBuilds.delete(token);
+        await globalLogger.aiAction({
+          guildId: pending.guildId, guildName: guild.name, userId: interaction.user.id, username: interaction.user.tag,
+          action:'AI_SERVER_BUILDER_APPLY', command:'serverbuild', result: failed.length ? 'partial' : 'success',
+          metadata:{ theme: pending.theme, created, failed }
+        });
+        const resultEmbed = new EmbedBuilder()
+          .setTitle(failed.length ? '⚠️ Server teilweise erstellt' : '✅ Server erfolgreich erstellt!')
+          .setColor(failed.length ? 0xfacc15 : 0x06ffa5)
+          .addFields(
+            { name: '🎭 Rollen erstellt', value: created.roles.length ? created.roles.join(', ') : '—', inline: false },
+            { name: '📁 Kategorien erstellt', value: created.categories.length ? created.categories.join(', ') : '—', inline: false },
+            { name: '#️⃣ Kanäle erstellt', value: created.channels.length ? created.channels.join(', ').slice(0,1000) : '—', inline: false }
+          );
+        if(failed.length) resultEmbed.addFields({ name: '❌ Fehler', value: failed.slice(0,10).join('\n').slice(0,1000), inline: false });
+        await interaction.editReply({ content: '', embeds: [resultEmbed] });
+        return;
+      }
+    }
+  }
+
+  // ===== AI Server Builder — Bearbeiten-Modal ausgewertet =====
+  if(interaction.isModalSubmit() && interaction.customId.startsWith('sb_editmodal_')){
+    const token = interaction.customId.split('_').slice(2).join('_');
+    const pending = pendingServerBuilds.get(token);
+    if(!pending){
+      await interaction.reply({ ephemeral:true, content:'⌛ Diese Vorschau ist abgelaufen. Führe /serverbuild erneut aus.' });
+      return;
+    }
+    await interaction.deferUpdate();
+    const editInstructions = interaction.fields.getTextInputValue('sb_edit_instructions');
+    const newPrompt = `${pending.theme}\n\nÄnderungswünsche des Nutzers: ${editInstructions}`;
+    const res = await aiEngine.infer({ module:'AI_SERVER_BUILDER', guildId: pending.guildId, userId: interaction.user.id, prompt: newPrompt, provider: pending.provider==='auto'?undefined:pending.provider as any } as any);
+    pendingServerBuilds.delete(token);
+    const newToken = Math.random().toString(36).slice(2,10);
+    pendingServerBuilds.set(newToken, { plan: res.output, theme: newPrompt, provider: pending.provider, userId: pending.userId, guildId: pending.guildId, createdAt: Date.now() });
+    const { embed, row } = buildServerPreview(res.output, res.model, newToken);
+    await interaction.editReply({ embeds: [embed], components: [row] });
+    return;
   }
 });
 
@@ -770,6 +861,79 @@ client.on(Events.GuildAuditLogEntryCreate as any, async (entry:any, guild:any)=>
     });
   } catch {}
 });
+
+
+// ===== AI SERVER BUILDER — Vorschau, Bestätigung & echte Guild-Erstellung =====
+function chTypeLabel(t: number){ return t===2 ? '🔊' : t===13 ? '🎙️' : '#'; }
+
+function buildServerPreview(plan: any, model: string, token: string){
+  const catLines = (plan.categories||[]).map((cat:any)=>
+    `**${cat.name}**\n` + (cat.channels||[]).map((ch:any)=>`  ${chTypeLabel(ch.type)} ${ch.name}`).join('\n')
+  ).join('\n\n');
+  const roleLines = (plan.roles||[]).map((r:any)=>`🎭 **${r.name}** — ${r.color||'#99aab5'}`).join('\n');
+  const totalChannels = (plan.categories||[]).reduce((n:number,c:any)=>n+(c.channels?.length||0),0);
+
+  const embed = new EmbedBuilder()
+    .setTitle(`🏗️ AI Server Builder — Vorschau: ${plan.name||'Nexus Generated Server'}`)
+    .setDescription(`Thema: *${plan.prompt||''}*\n\n📁 ${plan.categories?.length||0} Kategorien • #️⃣ ${totalChannels} Kanäle • 🎭 ${plan.roles?.length||0} Rollen`)
+    .addFields(
+      { name: '📂 Struktur', value: catLines.slice(0,1000) || '—', inline: false },
+      { name: '🎭 Rollen', value: roleLines.slice(0,1000) || '—', inline: false },
+      { name: '🛡️ AutoMod', value: plan.automod?.enabled ? '✅ AntiSpam/AntiRaid/AntiNuke aktiv' : '❌ aus', inline: false }
+    )
+    .setColor(0x7c3aed)
+    .setFooter({ text: `⏱ ~${Math.round(plan.estimatedBuildSec||8)}s Bauzeit • ${model} • Nexus AI Server Builder` })
+    .setTimestamp();
+
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder().setCustomId(`sb_confirm_${token}`).setLabel('✅ Bestätigen').setStyle(ButtonStyle.Success),
+    new ButtonBuilder().setCustomId(`sb_edit_${token}`).setLabel('✏️ Bearbeiten').setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`sb_reject_${token}`).setLabel('❌ Ablehnen').setStyle(ButtonStyle.Danger)
+  );
+  return { embed, row };
+}
+
+// Baut den Plan real im Discord-Server: Rollen zuerst, dann Kategorien + Kanäle
+async function applyServerPlan(guild: any, plan: any){
+  const created = { roles: [] as string[], categories: [] as string[], channels: [] as string[] };
+  const failed: string[] = [];
+
+  for (const r of (plan.roles || [])) {
+    try {
+      const role = await guild.roles.create({
+        name: r.name,
+        color: r.color || undefined,
+        permissions: BigInt(r.permissions || '0'),
+        reason: 'Nexus AI Server Builder'
+      });
+      created.roles.push(role.name);
+    } catch (e: any) { failed.push(`Rolle "${r.name}": ${e.message}`); }
+  }
+
+  for (const cat of (plan.categories || [])) {
+    try {
+      const category = await guild.channels.create({
+        name: cat.name,
+        type: ChannelType.GuildCategory,
+        reason: 'Nexus AI Server Builder'
+      });
+      created.categories.push(category.name);
+      for (const ch of (cat.channels || [])) {
+        try {
+          const chan = await guild.channels.create({
+            name: ch.name,
+            type: ch.type === 2 ? ChannelType.GuildVoice : ch.type === 13 ? ChannelType.GuildStageVoice : ChannelType.GuildText,
+            parent: category.id,
+            reason: 'Nexus AI Server Builder'
+          });
+          created.channels.push(chan.name);
+        } catch (e: any) { failed.push(`Kanal "${ch.name}": ${e.message}`); }
+      }
+    } catch (e: any) { failed.push(`Kategorie "${cat.name}": ${e.message}`); }
+  }
+
+  return { created, failed };
+}
 
 const token = process.env.DISCORD_TOKEN;
 if (!token) {
