@@ -120,6 +120,17 @@ const baseCommands = [
   new SlashCommandBuilder().setName('ticket').setDescription('Open AI support ticket')
     .addStringOption(o=>o.setName('subject').setDescription('Issue').setRequired(true)),
   new SlashCommandBuilder().setName('dashboard').setDescription('Get dashboard link'),
+  new SlashCommandBuilder().setName('design').setDescription('✨ AI Discord-Design Generator — Prompt → Mockup/Vorschau')
+    .addStringOption(o=>o.setName('prompt').setDescription('Was soll designt werden? z.B. "Gaming Server Willkommens-Embed, dunkel & neon"').setRequired(true))
+    .addStringOption(o=>o.setName('style').setDescription('Design-Stil').addChoices(
+      {name:'🌆 Modern', value:'modern'},
+      {name:'⚪ Minimal', value:'minimal'},
+      {name:'🌃 Cyberpunk / Neon', value:'cyberpunk'},
+      {name:'🎮 Gaming', value:'gaming'},
+      {name:'🏢 Corporate', value:'corporate'},
+      {name:'💬 Discord-Native', value:'discord-native'}
+    ))
+    .addBooleanOption(o=>o.setName('image').setDescription('Echtes Vorschaubild generieren (DALL·E, falls verfügbar)')),
   teamCommand.data
 ];
 
@@ -507,6 +518,46 @@ client.on(Events.InteractionCreate, async interaction => {
           .setColor(0x7c3aed)
           .setFooter({ text: `⏱ ${res.latencyMs}ms • ${res.model} • $${res.costUsd.toFixed(5)} • v3.2 Global` })
           .setTimestamp();
+        await interaction.editReply({ embeds: [embed] });
+        return;
+      }
+      if (commandName === 'design') {
+        await interaction.deferReply();
+        const prompt = interaction.options.getString('prompt', true);
+        const style = interaction.options.getString('style') ?? 'modern';
+        const wantImage = interaction.options.getBoolean('image') ?? true;
+        statsAggregator.inc('aiRequestsToday',1);
+        const res = await aiEngine.infer({
+          module: 'AI_DISCORD_DESIGNER',
+          guildId: interaction.guildId ?? undefined,
+          userId: interaction.user.id,
+          prompt,
+          context: { style, wantImage }
+        } as any);
+        const d = res.output as any;
+        await globalLogger.aiAction({
+          guildId: interaction.guildId ?? undefined,
+          guildName: interaction.guild?.name,
+          userId: interaction.user.id,
+          username: interaction.user.tag,
+          action: 'AI_DISCORD_DESIGNER',
+          command: `design ${style}`,
+          result: `${res.latencyMs}ms • ${res.model}`,
+          metadata:{ prompt: prompt.slice(0,200), hasImage: !!d?.imageUrl }
+        });
+        const embed = new EmbedBuilder()
+          .setTitle(d?.title || '✨ Nexus Design Concept')
+          .setDescription(d?.concept || prompt.slice(0,200))
+          .setColor(0x7c3aed)
+          .addFields(
+            { name: '🎨 Palette', value: (d?.palette||[]).map((c:string)=>``${c}``).join(' ') || '—', inline: false },
+            { name: '🔤 Font', value: d?.font || 'Inter', inline: true },
+            { name: '📐 Layout', value: (d?.layout||[]).slice(0,5).map((l:string)=>`• ${l}`).join('\n') || '—', inline: false },
+            { name: '🧩 Components', value: (d?.components||[]).slice(0,6).join(', ') || '—', inline: false }
+          )
+          .setFooter({ text: `⏱ ${res.latencyMs}ms • ${res.model} • ${style} • Nexus AI Design v1` })
+          .setTimestamp();
+        if (d?.imageUrl) embed.setImage(d.imageUrl);
         await interaction.editReply({ embeds: [embed] });
         return;
       }
