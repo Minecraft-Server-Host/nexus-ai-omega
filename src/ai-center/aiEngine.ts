@@ -310,7 +310,25 @@ export class AIEngine {
     return { answer:`Based on Nexus RAG (Qdrant top-3, sim 0.91): ${match.a}\n\nNeed human staff? Reply “human”.`, confidence:0.91, sources:[match.q], autoCloseEligible:true };
   }
   private async runServerBuilder(prompt:string){
-    return { name:'Nexus Generated Server', prompt, categories:[
+    // Channel-Type-Codes (Discord API): 0=Text, 2=Voice, 13=Stage
+    const builderPrompt = `You are Nexus AI's Server Builder module. A user wants a fully structured Discord server for: "${prompt}".
+Return STRICT JSON only, no markdown fences, no commentary, in this exact shape (channel type: 0=text, 2=voice, 13=stage):
+{"name":"Server name","categories":[{"name":"📢 CATEGORY NAME","channels":[{"name":"channel-name","type":0}]}],"roles":[{"name":"Role","color":"#7c3aed","permissions":"8"}],"automod":{"enabled":true,"antiSpam":true,"antiRaid":true,"antiNuke":true}}
+Design 4-6 categories with fitting channels and 4-6 roles (color hex, Discord permission bitfield as string — 8 = Administrator) tailored specifically to the theme.`;
+
+    let parsed: any = null;
+    try {
+      const sorted = [...this.clients.values()].filter(c=>c.provider.id!=='nexus-mock').sort((a,b)=> a.provider.priority - b.provider.priority);
+      const pc = sorted[0];
+      if (pc) {
+        const raw = await this.universalLLM(pc.provider.id, { module:'AI_SERVER_BUILDER', prompt: builderPrompt } as any, pc.provider.models[0]);
+        const text = raw?.text || '';
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+      }
+    } catch(e:any) { logger.warn({ err: e.message }, 'ServerBuilder LLM parse failed — using fallback template'); }
+
+    if (!parsed) parsed = { name:'Nexus Generated Server', prompt, categories:[
       {name:'📢 INFORMATION',channels:[{name:'welcome',type:0},{name:'rules',type:0},{name:'announcements',type:0}]},
       {name:'💬 COMMUNITY',channels:[{name:'general',type:0},{name:'media',type:0},{name:'bot-commands',type:0}]},
       {name:'🎮 GAMING',channels:[{name:'lfg',type:0},{name:'Gaming VC',type:2}]},
@@ -323,6 +341,9 @@ export class AIEngine {
       {name:'VIP',color:'#facc15',permissions:'104324673'},
       {name:'Member',color:'#9ca3af',permissions:'104324673'}
     ], automod:{enabled:true,antiSpam:true,antiRaid:true,antiNuke:true}, estimatedBuildSec:8.4 };
+    parsed.prompt = prompt;
+    parsed.estimatedBuildSec = Math.max(4, (parsed.categories?.reduce((n:number,c:any)=>n+(c.channels?.length||0),0) || 5) * 1.2 + (parsed.roles?.length||5)*0.8);
+    return parsed;
   }
   private async communityManager(ctx?:any){ return { action:'post_engagement', channel:ctx?.channelId??'general', draft:'🚀 Nexus AI detected 48h silence. Prompt: “What game are you grinding this weekend? 🎮”', poll:{question:'Next community event?',options:['Tournament','Movie night','AMA','Giveaway']}, churnAlerts:2 }; }
   private async embedBuilder(prompt:string){ return { title:'✨ Nexus AI Embed', description:prompt.slice(0,180), color:0x7c3aed, fields:[{name:'🤖 AI Generated',value:'true',inline:true},{name:'⏱ Build time',value:'0.42s',inline:true}], footer:{text:'Nexus AI Omega • v3.1 Universal'}, timestamp:new Date().toISOString(), components:[{type:1,components:[{type:2,style:3,label:'Accept',custom_id:'nexus_accept'},{type:2,style:2,label:'Edit',custom_id:'nexus_edit'},{type:2,style:4,label:'Delete',custom_id:'nexus_delete'},{type:2,style:5,label:'Dashboard',url:'https://nexus.ai'}]}] }; }
