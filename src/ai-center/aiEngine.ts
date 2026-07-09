@@ -239,7 +239,7 @@ export class AIEngine {
       case 'HYBRID_AUTOMOD': return this.runHybridAutoMod(req.prompt, req.context);
       case 'RAG_TICKET_HELPDESK': return this.runTicketAssistant(req.prompt, req.context);
       case 'AI_SERVER_BUILDER': return this.runServerBuilder(req.prompt);
-      case 'AI_DISCORD_DESIGNER': return { palette:['#7c3aed','#06ffa5','#0ea5e9','#f43f5e'], font:'Inter', banner:'gradient-cyber', provider: providerId };
+      case 'AI_DISCORD_DESIGNER': return this.runDiscordDesigner(req.prompt, req.context);
       case 'AI_COMMUNITY_MANAGER': return this.communityManager(req.context);
       case 'AI_ANALYTICS': return { churnRisk:0.12, dauTrend:'+8.4%', topChannel:'#general', suggestion:'Friday 20:00 UTC event', provider:providerId };
       case 'AI_EMBED_BUILDER': return this.embedBuilder(req.prompt);
@@ -326,6 +326,58 @@ export class AIEngine {
   }
   private async communityManager(ctx?:any){ return { action:'post_engagement', channel:ctx?.channelId??'general', draft:'🚀 Nexus AI detected 48h silence. Prompt: “What game are you grinding this weekend? 🎮”', poll:{question:'Next community event?',options:['Tournament','Movie night','AMA','Giveaway']}, churnAlerts:2 }; }
   private async embedBuilder(prompt:string){ return { title:'✨ Nexus AI Embed', description:prompt.slice(0,180), color:0x7c3aed, fields:[{name:'🤖 AI Generated',value:'true',inline:true},{name:'⏱ Build time',value:'0.42s',inline:true}], footer:{text:'Nexus AI Omega • v3.1 Universal'}, timestamp:new Date().toISOString(), components:[{type:1,components:[{type:2,style:3,label:'Accept',custom_id:'nexus_accept'},{type:2,style:2,label:'Edit',custom_id:'nexus_edit'},{type:2,style:4,label:'Delete',custom_id:'nexus_delete'},{type:2,style:5,label:'Dashboard',url:'https://nexus.ai'}]}] }; }
+
+  // ── AI Discord Designer — Prompt → Mockup (inspired by open-codesign) ──
+  private async runDiscordDesigner(prompt: string, context?: any) {
+    const style = context?.style || 'modern';
+    const wantImage = context?.wantImage !== false;
+
+    const designPrompt = `You are Nexus AI's Discord Designer module. A user wants a visual design/mockup for: "${prompt}". Style: ${style}.
+Return STRICT JSON only, no markdown fences, no commentary, in this exact shape:
+{"title":"short catchy title","concept":"one sentence describing the visual metaphor/concept","palette":["#hex1","#hex2","#hex3","#hex4"],"font":"font family name","layout":["Section 1: ...","Section 2: ...","Section 3: ..."],"components":["Component 1","Component 2","Component 3"],"imagePrompt":"detailed prompt for an image generation model to create a visual mockup preview, max 300 chars"}`;
+
+    let parsed: any = null;
+    try {
+      const sorted = [...this.clients.values()].filter(c=>c.provider.id!=='nexus-mock').sort((a,b)=> a.provider.priority - b.provider.priority);
+      const pc = sorted[0];
+      if (pc) {
+        const raw = await this.universalLLM(pc.provider.id, { module:'AI_DISCORD_DESIGNER', prompt: designPrompt } as any, pc.provider.models[0]);
+        const text = raw?.text || '';
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+      }
+    } catch(e:any) { logger.warn({ err: e.message }, 'DiscordDesigner LLM parse failed — using fallback'); }
+
+    if (!parsed) {
+      parsed = {
+        title: '✨ Nexus Design Concept',
+        concept: prompt.slice(0,140),
+        palette: ['#7c3aed','#06ffa5','#0ea5e9','#f43f5e'],
+        font: 'Inter',
+        layout: ['Hero banner with gradient background','Content grid with cards','Footer with CTA buttons'],
+        components: ['Banner','Card grid','Button row'],
+        imagePrompt: `Discord server design mockup: ${prompt}, ${style} style, clean UI, high detail`
+      };
+    }
+
+    // Optional: echtes Vorschaubild via OpenAI DALL·E, falls konfiguriert
+    let imageUrl: string | null = null;
+    if (wantImage && this.clients.has('openai')) {
+      try {
+        const { client } = this.clients.get('openai')!;
+        const img = await client.images.generate({
+          model: 'dall-e-3',
+          prompt: parsed.imagePrompt || `Discord UI mockup: ${prompt}`,
+          size: '1024x1024',
+          n: 1
+        });
+        imageUrl = img?.data?.[0]?.url ?? null;
+      } catch(e:any) { logger.warn({ err: e.message }, 'DALL-E image generation failed'); }
+    }
+
+    return { ...parsed, imageUrl, provider: imageUrl ? 'openai' : 'text-only' };
+  }
+
 
   // --- UNIVERSAL LLM ROUTER ---
   private async universalLLM(providerId: AIProviderId, req: AIInferenceRequest, model:string){
