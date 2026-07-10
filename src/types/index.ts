@@ -53,7 +53,8 @@ export const AI_MODULES = [
   'AI_CHANNEL_BUILDER',
   'AI_EVENT_PLANNER',
   'AI_BUG_DETECTOR',
-  'AI_CODE_ASSISTANT'
+  'AI_CODE_ASSISTANT',
+  'AI_TICKET_ANALYST'
 ] as const;
 
 export type AIModuleId = typeof AI_MODULES[number];

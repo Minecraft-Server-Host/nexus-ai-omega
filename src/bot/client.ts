@@ -23,6 +23,7 @@ import { globalTeamService } from '../global/team/globalTeamService.js';
 import { roleSyncService } from '../global/team/roleSyncService.js';
 import { roleProtectionService } from '../global/team/roleProtectionService.js';
 import { teamCommand } from './commands/team/teamCommands.js';
+import { registerTicketSystem } from './commands/ticket/ticketSystem.js';
 
 const client = new Client({
   intents: [
@@ -43,6 +44,8 @@ const client = new Client({
 });
 
 (client as any).commands = new Collection();
+
+registerTicketSystem(client);
 
 // ===== SLASH COMMANDS =====
 const baseCommands = [
