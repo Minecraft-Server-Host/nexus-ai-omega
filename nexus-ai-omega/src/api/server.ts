@@ -171,12 +171,13 @@ app.get('/api/v1/stream', (req,res)=>{
     });
   }, 1200);
 
-  const secHandler = (msg:any)=> send('security', msg.value);
-  const aiHandler  = (msg:any)=> send('ai_log', msg.value);
-  eventBus.on('security-alerts', secHandler);
-  eventBus.on('dashboard-telemetry', aiHandler);
+  const secHandler = (msg: unknown) => send('security', (msg as {value: unknown}).value);
+  const aiHandler  = (msg: unknown) => send('ai_log',   (msg as {value: unknown}).value);
+  const eb = eventBus as unknown as import('node:events').EventEmitter;
+  eb.on('security-alerts',      secHandler);
+  eb.on('dashboard-telemetry',  aiHandler);
 
-  req.on('close', ()=>{ clearInterval(interval); eventBus.off('security-alerts', secHandler); eventBus.off('dashboard-telemetry', aiHandler); });
+  req.on('close', () => { clearInterval(interval); eb.off('security-alerts', secHandler); eb.off('dashboard-telemetry', aiHandler); });
 });
 
 // Serve dashboard static

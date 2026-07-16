@@ -918,10 +918,8 @@ export async function handleBuildConfirm(interaction: ButtonInteraction): Promis
       `> **Wie soll der neue Server gebaut werden?**`,
     )
     .addFields(
-      { name: '🗑️ Alles löschen & neu bauen', value: '> Alle vorhandenen Kanäle/Rollen werden gelöscht
-> Dann wird der KI-Plan komplett neu gebaut', inline: false },
-      { name: '➕ Nur hinzufügen',             value: '> Vorhandene Kanäle/Rollen bleiben erhalten
-> Neue Kanäle/Rollen werden hinzugefügt',      inline: false },
+      { name: '🗑️ Alles löschen & neu bauen', value: '> Alle vorhandenen Kanäle/Rollen werden gelöscht\n> Dann wird der KI-Plan komplett neu gebaut', inline: false },
+      { name: '➕ Nur hinzufügen',             value: '> Vorhandene Kanäle/Rollen bleiben erhalten\n> Neue Kanäle/Rollen werden hinzugefügt',      inline: false },
     )
     .setFooter({ text: 'Nexus AI Omega v5 • Server Builder 2.0' });
 

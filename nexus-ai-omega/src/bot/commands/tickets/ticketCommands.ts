@@ -1,6 +1,6 @@
 /**
  * Nexus AI Omega — Ticket Commands v5.0
- * /close /add /remove /claim /unclaim /transcript
+ * /close /add /ticket-remove /claim /unclaim /transcript
  * Übernommen & upgraded von discord-bot-source
  */
 import {
@@ -133,7 +133,7 @@ export const addCmd: NexusCommand = {
 // ── /remove ───────────────────────────────────────────────────────────────────
 export const removeCmd: NexusCommand = {
   data: new SlashCommandBuilder()
-    .setName('remove')
+    .setName('ticket-remove')
     .setDescription('➖ Benutzer aus Ticket entfernen')
     .addUserOption(o => o.setName('benutzer').setDescription('Benutzer').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels)
