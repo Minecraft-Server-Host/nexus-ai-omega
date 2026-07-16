@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Nexus AI Omega v5 — Command Center</title>
+<style>
+:root {
+  --bg:#04050e; --bg2:#080a1a; --bg3:#0d1022;
+  --panel:rgba(13,16,38,0.85); --glass:rgba(255,255,255,0.028);
+  --border:rgba(124,58,237,0.18); --border2:rgba(6,255,165,0.12);
+  --purple:#7c3aed; --purple2:#a855f7; --cyan:#06ffa5; --blue:#0ea5e9;
+  --pink:#f43f5e; --amber:#fbbf24; --mint:#10b981; --indigo:#6366f1;
+  --text:#eaecff; --muted:#8891b8; --dim:#4b5380;
+  --ok:#06ffa5; --warn:#fbbf24; --danger:#f43f5e; --info:#0ea5e9;
+  --r:14px; --r2:8px; --r3:6px;
+  --shadow:0 20px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.04);
+  --font:'Outfit',system-ui,Inter,'Segoe UI',sans-serif;
+  --mono:'JetBrains Mono',monospace;
+}
+*, *::before, *::after { box-sizing:border-box; margin:0; padding:0 }
+html, body { height:100%; scroll-behavior:smooth }
+body {
+  font-family:var(--font);
+  background:
+    radial-gradient(1600px 1000px at 95% -10%, rgba(124,58,237,.12), transparent 55%),
+    radial-gradient(1000px 800px at -5% 20%,  rgba(14,165,233,.08), transparent 50%),
+    radial-gradient(800px 600px at 50% 110%,  rgba(6,255,165,.04),  transparent 55%),
+    linear-gradient(180deg, #050610 0%, #04050e 100%);
+  color:var(--text); overflow-x:hidden; min-height:100vh;
+}
+a { color:var(--cyan); text-decoration:none }
+::-webkit-scrollbar { width:5px }
+::-webkit-scrollbar-track { background:var(--bg2) }
+::-webkit-scrollbar-thumb { background:rgba(124,58,237,.35); border-radius:3px }
+::-webkit-scrollbar-thumb:hover { background:rgba(124,58,237,.55) }
+
+/* ── LAYOUT ── */
+.app { display:flex; height:100vh; overflow:hidden }
+.sidebar {
+  width:220px; flex-shrink:0;
+  background:rgba(6,8,20,.92); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; padding:20px 12px; gap:2px;
+  overflow-y:auto; position:relative;
+}
+.main { flex:1; overflow-y:auto; padding:24px 28px }
+@media(max-width:768px){
+  .app { flex-direction:column }
+  .sidebar { width:100%; flex-direction:row; flex-wrap:wrap; padding:12px; height:auto; overflow:visible }
+  .main { padding:16px }
+}
+
+/* ── SIDEBAR ── */
+.logo { display:flex; align-items:center; gap:10px; padding:0 6px 18px; border-bottom:1px solid var(--border); margin-bottom:10px }
+.logo-orb {
+  width:34px; height:34px; border-radius:10px;
+  background:linear-gradient(135deg,var(--purple),var(--purple2));
+  display:flex; align-items:center; justify-content:center; font-size:17px;
+  box-shadow:0 0 20px rgba(124,58,237,.4);
+}
+.logo-text { font-size:14px; font-weight:700; line-height:1.2 }
+.logo-ver { font-size:10px; color:var(--muted) }
+
+.nav-group { font-size:9.5px; text-transform:uppercase; letter-spacing:.14em; color:var(--dim); padding:14px 8px 5px; margin-top:4px }
+.nav-btn {
+  display:flex; align-items:center; gap:9px; padding:9px 10px;
+  border-radius:var(--r2); font-size:13px; color:var(--muted);
+  cursor:pointer; transition:all .15s; border:none; background:transparent;
+  width:100%; text-align:left; white-space:nowrap;
+}
+.nav-btn:hover { background:var(--glass); color:var(--text) }
+.nav-btn.active {
+  background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(168,85,247,.1));
+  color:var(--purple2); border:1px solid rgba(124,58,237,.25);
+}
+.nav-icon { font-size:15px; flex-shrink:0 }
+.nav-badge {
+  margin-left:auto; font-size:10px; padding:1px 6px; border-radius:20px;
+  background:rgba(6,255,165,.12); color:var(--ok); font-weight:700;
+}
+
+.sidebar-footer { margin-top:auto; padding-top:14px; border-top:1px solid var(--border) }
+.status-pill {
+  display:flex; align-items:center; gap:6px; padding:6px 10px;
+  border-radius:20px; background:var(--glass); border:1px solid var(--border);
+  font-size:11px; width:100%; justify-content:center;
+}
+.dot { width:7px; height:7px; border-radius:50%; flex-shrink:0 }
+.dot-ok  { background:var(--ok);   box-shadow:0 0 6px var(--ok) }
+.dot-warn{ background:var(--warn); box-shadow:0 0 6px var(--warn) }
+.dot-off { background:var(--dim) }
+
+/* ── TOP BAR ── */
+.topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:12px }
+.page-title { font-size:20px; font-weight:800; letter-spacing:-.02em }
+.page-title .gradient { background:linear-gradient(135deg,var(--purple2),var(--cyan)); -webkit-background-clip:text; -webkit-text-fill-color:transparent }
+.page-sub { font-size:12px; color:var(--muted); margin-top:2px }
+.topbar-right { display:flex; gap:8px; align-items:center; flex-wrap:wrap }
+
+.btn { display:inline-flex; align-items:center; gap:6px; padding:7px 14px; border-radius:var(--r2); font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; border:none }
+.btn-primary { background:linear-gradient(135deg,var(--purple),var(--purple2)); color:#fff; box-shadow:0 4px 16px rgba(124,58,237,.3) }
+.btn-ghost { background:var(--glass); color:var(--text); border:1px solid var(--border) }
+.btn-danger { background:rgba(244,63,94,.15); color:var(--danger); border:1px solid rgba(244,63,94,.25) }
+.btn:hover { opacity:.85; transform:translateY(-1px) }
+
+/* ── STATUS BAR ── */
+.status-bar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:20px }
+.chip {
+  display:flex; align-items:center; gap:5px; padding:4px 10px;
+  border-radius:20px; font-size:11px; font-weight:500;
+  background:var(--glass); border:1px solid var(--border);
+}
+
+/* ── KPI GRID ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px }
+@media(max-width:960px){ .kpi-grid{grid-template-columns:repeat(2,1fr)} }
+@media(max-width:480px){ .kpi-grid{grid-template-columns:1fr} }
+
+.kpi {
+  background:var(--panel); border:1px solid var(--border); border-radius:var(--r);
+  padding:16px 18px; position:relative; overflow:hidden;
+  transition:transform .2s, border-color .2s, box-shadow .2s;
+  cursor:default;
+}
+.kpi:hover { transform:translateY(-2px); border-color:rgba(124,58,237,.35); box-shadow:0 8px 32px rgba(124,58,237,.15) }
+.kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px }
+.kpi.c-purple::before  { background:linear-gradient(90deg,var(--purple),var(--purple2)) }
+.kpi.c-cyan::before    { background:linear-gradient(90deg,var(--cyan),var(--mint)) }
+.kpi.c-blue::before    { background:linear-gradient(90deg,var(--blue),var(--indigo)) }
+.kpi.c-amber::before   { background:linear-gradient(90deg,var(--amber),#f97316) }
+.kpi.c-pink::before    { background:linear-gradient(90deg,var(--pink),#e11d48) }
+.kpi.c-mint::before    { background:linear-gradient(90deg,var(--mint),var(--cyan)) }
+.kpi .kpi-icon  { font-size:20px; margin-bottom:8px }
+.kpi .kpi-lbl   { font-size:10.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:5px }
+.kpi .kpi-val   { font-size:26px; font-weight:800; line-height:1; font-variant-numeric:tabular-nums }
+.kpi .kpi-sub   { font-size:11px; color:var(--dim); margin-top:4px }
+.kpi .kpi-delta { font-size:11px; margin-top:6px }
+.delta-up   { color:var(--ok) }
+.delta-down { color:var(--danger) }
+
+/* ── CARDS ── */
+.card { background:var(--panel); border:1px solid var(--border); border-radius:var(--r); padding:18px 20px; margin-bottom:14px }
+.card-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px }
+.card-title { font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.1em; color:var(--muted) }
+.badge { font-size:11px; padding:2px 8px; border-radius:20px; font-weight:700 }
+.badge-ok     { background:rgba(6,255,165,.1);  color:var(--ok);     border:1px solid rgba(6,255,165,.2) }
+.badge-warn   { background:rgba(251,191,36,.1); color:var(--warn);   border:1px solid rgba(251,191,36,.2) }
+.badge-purple { background:rgba(168,85,247,.1); color:var(--purple2);border:1px solid rgba(168,85,247,.2) }
+.badge-blue   { background:rgba(14,165,233,.1); color:var(--info);   border:1px solid rgba(14,165,233,.2) }
+.badge-red    { background:rgba(244,63,94,.1);  color:var(--danger); border:1px solid rgba(244,63,94,.2) }
+
+/* ── GRID ── */
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:14px }
+.g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px }
+.g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:14px }
+@media(max-width:900px){ .g2,.g3,.g4{ grid-template-columns:1fr 1fr } }
+@media(max-width:550px){ .g2,.g3,.g4{ grid-template-columns:1fr } }
+
+/* ── DEFCON ── */
+.defcon-box {
+  display:flex; align-items:center; gap:16px; padding:14px 18px;
+  border-radius:var(--r); border:1px solid; transition:all .4s;
+}
+.defcon-5{border-color:rgba(6,255,165,.3); background:rgba(6,255,165,.04)}
+.defcon-4{border-color:rgba(251,191,36,.3); background:rgba(251,191,36,.04)}
+.defcon-3{border-color:rgba(249,115,22,.3); background:rgba(249,115,22,.04)}
+.defcon-2{border-color:rgba(244,63,94,.35); background:rgba(244,63,94,.05)}
+.defcon-1{border-color:rgba(220,38,38,.5);  background:rgba(220,38,38,.08); animation:pulse-border 2s infinite}
+@keyframes pulse-border{0%,100%{box-shadow:0 0 8px rgba(220,38,38,.3)}50%{box-shadow:0 0 20px rgba(220,38,38,.7)}}
+.defcon-num  { font-size:44px; font-weight:900; font-variant-numeric:tabular-nums }
+.defcon-name { font-size:15px; font-weight:700 }
+.defcon-desc { font-size:11px; color:var(--muted); margin-top:3px }
+
+/* ── PROVIDER LIST ── */
+.prov-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 12px; border-radius:var(--r2); background:var(--glass);
+  border:1px solid transparent; transition:all .15s; margin-bottom:6px;
+}
+.prov-item:hover { border-color:var(--border) }
+.prov-name  { font-size:13px; font-weight:500 }
+.prov-model { font-size:10.5px; color:var(--muted); font-family:var(--mono) }
+.prov-ok    { font-size:11px; padding:2px 8px; border-radius:20px; background:rgba(6,255,165,.1); color:var(--ok); font-weight:700 }
+.prov-off   { font-size:11px; padding:2px 8px; border-radius:20px; background:rgba(75,83,128,.15); color:var(--dim) }
+
+/* ── LOG STREAM ── */
+.log-stream { display:flex; flex-direction:column; gap:5px; max-height:260px; overflow-y:auto }
+.log-item {
+  display:flex; align-items:flex-start; gap:9px; padding:7px 11px;
+  border-radius:var(--r3); background:var(--glass); font-size:11.5px;
+  border-left:3px solid var(--dim); transition:border-color .2s;
+}
+.log-ok  { border-left-color:var(--ok) }
+.log-warn{ border-left-color:var(--warn) }
+.log-err { border-left-color:var(--danger); background:rgba(244,63,94,.04) }
+.log-ai  { border-left-color:var(--purple2) }
+.log-sec { border-left-color:var(--danger); background:rgba(220,38,38,.06) }
+.log-t { color:var(--dim); font-family:var(--mono); white-space:nowrap; font-size:10px; margin-top:1px }
+.log-msg { flex:1; line-height:1.5; color:var(--text) }
+
+/* ── MODULE GRID ── */
+.mod-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px }
+@media(max-width:700px){ .mod-grid{grid-template-columns:repeat(2,1fr)} }
+.mod-chip { padding:9px 11px; border-radius:var(--r2); background:var(--glass); border:1px solid var(--border) }
+.mod-name { font-size:11.5px; font-weight:600; margin-bottom:2px }
+.mod-meta { font-size:10px; color:var(--muted); font-family:var(--mono) }
+
+/* ── SECURITY TABLE ── */
+.sec-table { width:100%; border-collapse:collapse; font-size:11.5px }
+.sec-table th { text-align:left; padding:7px 10px; font-size:9.5px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); border-bottom:1px solid var(--border) }
+.sec-table td { padding:9px 10px; border-bottom:1px solid rgba(124,58,237,.06) }
+.sec-table tr:hover td { background:var(--glass) }
+.sev { display:inline-flex; padding:1px 6px; border-radius:20px; font-weight:700; font-size:10px }
+.sev5{background:rgba(244,63,94,.2);color:var(--danger)}
+.sev4{background:rgba(249,115,22,.2);color:#f97316}
+.sev3{background:rgba(251,191,36,.2);color:var(--warn)}
+.sev2{background:rgba(16,185,129,.2);color:var(--mint)}
+.sev1{background:rgba(6,255,165,.2);color:var(--ok)}
+
+/* ── STATS ROW ── */
+.stat-row { display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid rgba(124,58,237,.07) }
+.stat-row:last-child { border-bottom:none }
+.stat-lbl { font-size:12.5px; color:var(--muted) }
+.stat-val { font-size:13px; font-weight:700 }
+
+/* ── RAM CHART ── */
+.chart-wrap { height:100px; display:flex; align-items:flex-end; gap:2px; padding:6px; background:var(--glass); border-radius:var(--r2); overflow:hidden }
+.chart-bar { flex:1; min-width:3px; border-radius:2px 2px 0 0; transition:height .4s ease; min-height:3px }
+
+/* ── SKELETON ── */
+.skel { background:linear-gradient(90deg,var(--glass),rgba(255,255,255,.05),var(--glass)); background-size:200% 100%; border-radius:4px; animation:shimmer 1.6s infinite }
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── PROGRESS BAR ── */
+.progress { height:6px; background:rgba(124,58,237,.15); border-radius:3px; overflow:hidden }
+.progress-fill { height:100%; border-radius:3px; transition:width .6s ease; background:linear-gradient(90deg,var(--purple),var(--purple2)) }
+
+/* ── ANIMATIONS ── */
+@keyframes glow{0%,100%{box-shadow:0 0 4px currentColor}50%{box-shadow:0 0 14px currentColor}}
+.dot-ok { animation:glow 2.5s infinite }
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.slide-in { animation:slideIn .25s ease }
+
+/* ── SECTION ── */
+section { display:none }
+section.active { display:block }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══ SIDEBAR ══════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-orb">🌐</div>
+    <div>
+      <div class="logo-text">Nexus AI Omega</div>
+      <div class="logo-ver">v5.0 • Command Center</div>
+    </div>
+  </div>
+
+  <span class="nav-group">Übersicht</span>
+  <button class="nav-btn active" onclick="nav('dash',this)"><span class="nav-icon">📊</span>Dashboard</button>
+  <button class="nav-btn" onclick="nav('ai',this)"><span class="nav-icon">🤖</span>AI Engine<span class="nav-badge" id="nb-ai">—</span></button>
+  <button class="nav-btn" onclick="nav('security',this)"><span class="nav-icon">🛡️</span>Security</button>
+
+  <span class="nav-group">Module</span>
+  <button class="nav-btn" onclick="nav('tickets',this)"><span class="nav-icon">🎫</span>Tickets</button>
+  <button class="nav-btn" onclick="nav('servers',this)"><span class="nav-icon">🏰</span>Server</button>
+  <button class="nav-btn" onclick="nav('logs',this)"><span class="nav-icon">📋</span>Live Logs</button>
+  <button class="nav-btn" onclick="nav('team',this)"><span class="nav-icon">👥</span>Team</button>
+
+  <span class="nav-group">System</span>
+  <button class="nav-btn" onclick="nav('perf',this)"><span class="nav-icon">⚡</span>Performance</button>
+  <button class="nav-btn" onclick="nav('providers',this)"><span class="nav-icon">🔮</span>AI Provider</button>
+  <button class="nav-btn" onclick="nav('settings',this)"><span class="nav-icon">⚙️</span>Einstellungen</button>
+
+  <div class="sidebar-footer">
+    <div class="status-pill"><div class="dot dot-ok"></div><span id="sys-status">System Online</span></div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div>
+      <div class="page-title">Global <span class="gradient">Command Center</span></div>
+      <div class="page-sub">Echtzeit-Übersicht aller Nexus AI Omega Systeme</div>
+    </div>
+    <div class="topbar-right">
+      <div class="chip"><div class="dot dot-ok"></div><span id="uptime-chip">Uptime: —</span></div>
+      <button class="btn btn-primary" onclick="loadAll()">🔄 Aktualisieren</button>
+      <a href="/auth/discord/login" class="btn btn-ghost">🔑 Login</a>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="chip"><div class="dot dot-ok"></div>API Online</div>
+    <div class="chip" id="chip-ai"><div class="dot dot-warn"></div>AI: Lädt…</div>
+    <div class="chip" id="chip-redis"><div class="dot dot-warn"></div>Redis: Lädt…</div>
+    <div class="chip" id="chip-gw"><div class="dot dot-warn"></div>Gateway: Lädt…</div>
+    <div class="chip" id="chip-sec"><div class="dot dot-warn"></div>Zero-Trust: Aktiv</div>
+    <div class="chip" id="chip-ver"><div class="dot dot-ok"></div>v5.0.0</div>
+  </div>
+
+  <!-- ═══════════ DASHBOARD ═══════════ -->
+  <section id="s-dash" class="active">
+    <div class="kpi-grid">
+      <div class="kpi c-purple"><div class="kpi-icon">🏰</div><div class="kpi-lbl">Server</div><div class="kpi-val" id="k-srv">—</div><div class="kpi-sub">Aktive Guilds</div></div>
+      <div class="kpi c-cyan"><div class="kpi-icon">👥</div><div class="kpi-lbl">Mitglieder</div><div class="kpi-val" id="k-mem">—</div><div class="kpi-sub">Gesamt aller Server</div></div>
+      <div class="kpi c-blue"><div class="kpi-icon">🤖</div><div class="kpi-lbl">KI-Anfragen</div><div class="kpi-val" id="k-ai">—</div><div class="kpi-sub">Heute</div></div>
+      <div class="kpi c-amber"><div class="kpi-icon">⚡</div><div class="kpi-lbl">Befehle</div><div class="kpi-val" id="k-cmd">—</div><div class="kpi-sub">Heute</div></div>
+      <div class="kpi c-pink"><div class="kpi-icon">🎫</div><div class="kpi-lbl">Tickets</div><div class="kpi-val" id="k-tix">—</div><div class="kpi-sub">Heute erstellt</div></div>
+      <div class="kpi c-mint"><div class="kpi-icon">💬</div><div class="kpi-lbl">Nachrichten</div><div class="kpi-val" id="k-msg">—</div><div class="kpi-sub">Heute analysiert</div></div>
+      <div class="kpi c-purple"><div class="kpi-icon">🔨</div><div class="kpi-lbl">Bans</div><div class="kpi-val" id="k-ban">—</div><div class="kpi-sub">Heute</div></div>
+      <div class="kpi c-cyan"><div class="kpi-icon">⚠️</div><div class="kpi-lbl">Warnungen</div><div class="kpi-val" id="k-warn">—</div><div class="kpi-sub">Heute</div></div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-head"><span class="card-title">🛡️ DEFCON Status</span><span class="badge badge-ok" id="defcon-badge">NORMAL</span></div>
+        <div class="defcon-box defcon-5" id="defcon-box">
+          <div class="defcon-num" id="defcon-num">5</div>
+          <div><div class="defcon-name" id="defcon-name">Normal Operations</div><div class="defcon-desc" id="defcon-desc">Alle Systeme nominal. Zero-Trust aktiv.</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">📊 Live Metriken</span><span class="badge badge-purple">LIVE</span></div>
+        <div class="stat-row"><span class="stat-lbl">💾 RAM-Verbrauch</span><span class="stat-val" id="l-ram">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">🔥 Heap-Verbrauch</span><span class="stat-val" id="l-heap">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">📡 Uptime</span><span class="stat-val" id="l-up">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">🔍 Beobachtete Akteure</span><span class="stat-val" id="l-actors">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">🔒 Quarantäne</span><span class="stat-val" id="l-quar">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">⚡ Sicherheits-Alerts</span><span class="stat-val" id="l-alerts">—</span></div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-head"><span class="card-title">🎫 Ticket-Analyse</span></div>
+        <div class="stat-row"><span class="stat-lbl">📋 Bewerbungen</span><span class="stat-val" id="t-bew">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">🛠️ Support</span><span class="stat-val" id="t-sup">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">🐞 Bug Reports</span><span class="stat-val" id="t-bug">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">💡 Feedback</span><span class="stat-val" id="t-fb">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">🤝 Partnerschaften</span><span class="stat-val" id="t-prt">—</span></div>
+        <div class="stat-row"><span class="stat-lbl">❓ Sonstiges</span><span class="stat-val" id="t-son">—</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">📋 Live-Ereignisstrom</span><span class="badge badge-purple">LIVE</span></div>
+        <div class="log-stream" id="main-log-stream"><div class="log-item log-ok"><span class="log-t">—</span><span class="log-msg">Verbinde mit Event-Stream…</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ AI ENGINE ═══════════ -->
+  <section id="s-ai">
+    <div class="card">
+      <div class="card-head"><span class="card-title">🤖 KI-Module Status</span><span class="badge badge-ok" id="mod-count">—</span></div>
+      <div class="mod-grid" id="mod-grid"><div class="skel" style="height:55px;border-radius:8px;"></div><div class="skel" style="height:55px;border-radius:8px;"></div><div class="skel" style="height:55px;border-radius:8px;"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">🔮 KI-Provider Übersicht</span><span class="badge badge-blue" id="prov-count">—</span></div>
+      <div id="prov-list"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ SECURITY ═══════════ -->
+  <section id="s-security">
+    <div class="g3">
+      <div class="card"><div class="card-head"><span class="card-title">🚨 Alerts</span></div><div class="kpi-val" id="sec-alerts-count" style="font-size:32px">0</div><div class="kpi-sub" style="margin-top:6px">Gesamt diese Sitzung</div></div>
+      <div class="card"><div class="card-head"><span class="card-title">🔍 Phishing-Domains</span></div><div class="kpi-val" id="sec-phish" style="font-size:32px">—</div><div class="kpi-sub" style="margin-top:6px">Aktive Blocklist-Einträge</div></div>
+      <div class="card"><div class="card-head"><span class="card-title">⚡ Response-Zeit</span></div><div class="kpi-val" style="font-size:32px;color:var(--ok)">&lt;5ms</div><div class="kpi-sub" style="margin-top:6px">Zero-Trust Evaluierung</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><span class="card-title">🛡️ Sicherheitsereignisse</span><span class="badge badge-red" id="sec-count">0</span></div>
+      <table class="sec-table">
+        <thead><tr><th>Bedrohung</th><th>Guild</th><th>Akteur</th><th>Schweregrad</th><th>Uhrzeit</th></tr></thead>
+        <tbody id="sec-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">🟢 Keine Sicherheitsereignisse</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════ TICKETS ═══════════ -->
+  <section id="s-tickets">
+    <div class="card"><div class="card-head"><span class="card-title">🎫 Ticket-Verwaltung</span></div><p style="color:var(--muted);font-size:13px">Ticket-Daten werden über API geladen. Verbinde mit DB für vollständige Statistiken.</p></div>
+  </section>
+
+  <!-- ═══════════ SERVERS ═══════════ -->
+  <section id="s-servers">
+    <div class="card"><div class="card-head"><span class="card-title">🏰 Server-Registry</span></div><div id="servers-list" style="color:var(--muted);font-size:13px">Wird geladen…</div></div>
+  </section>
+
+  <!-- ═══════════ LIVE LOGS ═══════════ -->
+  <section id="s-logs">
+    <div class="card">
+      <div class="card-head"><span class="card-title">📋 Global Live-Logs</span><span class="badge badge-purple">SSE LIVE</span></div>
+      <div class="log-stream" id="full-log-stream" style="max-height:600px"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ TEAM ═══════════ -->
+  <section id="s-team">
+    <div class="card"><div class="card-head"><span class="card-title">👥 Team-Verwaltung</span></div><p style="color:var(--muted);font-size:13px">Team-Daten: Nexus Control Server → /team info | /team list</p></div>
+  </section>
+
+  <!-- ═══════════ PERFORMANCE ═══════════ -->
+  <section id="s-perf">
+    <div class="card">
+      <div class="card-head"><span class="card-title">⚡ RAM-Verlauf (letzte 40 Messpunkte)</span></div>
+      <div class="chart-wrap" id="ram-chart"></div>
+      <div style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:8px">Aktualisiert alle 2 Sekunden</div>
+    </div>
+    <div class="g3">
+      <div class="card"><div class="card-head"><span class="card-title">💾 RAM</span></div><div class="kpi-val" id="p-ram" style="font-size:26px">—</div></div>
+      <div class="card"><div class="card-head"><span class="card-title">🔥 Heap</span></div><div class="kpi-val" id="p-heap" style="font-size:26px">—</div></div>
+      <div class="card"><div class="card-head"><span class="card-title">⏱️ Uptime</span></div><div class="kpi-val" id="p-up" style="font-size:26px">—</div></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ PROVIDERS ═══════════ -->
+  <section id="s-providers">
+    <div class="card">
+      <div class="card-head"><span class="card-title">🔮 AI-Provider Konfiguration</span></div>
+      <div id="prov-full-list"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ SETTINGS ═══════════ -->
+  <section id="s-settings">
+    <div class="card"><div class="card-head"><span class="card-title">⚙️ Einstellungen</span></div><p style="color:var(--muted);font-size:13px">Konfiguration über <code style="background:var(--glass);padding:2px 6px;border-radius:4px">.env</code> und Prisma DB. Dashboard-Einstellungen folgen in v5.1.</p></div>
+  </section>
+
+</main>
+</div>
+
+<script>
+const API = '';
+const MAX_LOG = 50;
+const MAX_RAM_PTS = 40;
+let secEvents = [];
+let ramHistory = [];
+
+// ── Navigation ───────────────────────────────────────────────────────────────
+function nav(id, btn) {
+  document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const sec = document.getElementById('s-' + id);
+  if (sec) { sec.classList.add('active'); sec.classList.add('slide-in'); }
+  if (btn) btn.classList.add('active');
+  if (id === 'ai') loadProviders();
+  if (id === 'servers') loadServers();
+  if (id === 'providers') loadProvidersFull();
+}
+
+// ── Load all data ─────────────────────────────────────────────────────────────
+async function loadAll() {
+  await Promise.allSettled([loadStatus(), loadStats(), loadProviders()]);
+}
+
+async function loadStatus() {
+  try {
+    const s = await fetch(API + '/api/v1/status').then(r => r.json());
+
+    // Memory
+    document.getElementById('l-ram').textContent  = (s.memory?.rss  ?? '—') + ' MB';
+    document.getElementById('l-heap').textContent = (s.memory?.heap ?? '—') + ' MB';
+    document.getElementById('l-up').textContent   = formatUptime(s.uptime ?? 0);
+    document.getElementById('uptime-chip').textContent = 'Uptime: ' + formatUptime(s.uptime ?? 0);
+    document.getElementById('p-ram').textContent  = (s.memory?.rss  ?? '—') + ' MB';
+    document.getElementById('p-heap').textContent = (s.memory?.heap ?? '—') + ' MB';
+    document.getElementById('p-up').textContent   = formatUptime(s.uptime ?? 0);
+
+    // Security
+    const sec = s.security ?? {};
+    document.getElementById('l-actors').textContent = sec.trackedActors ?? '—';
+    document.getElementById('l-quar').textContent   = sec.quarantinedLocal ?? '—';
+    document.getElementById('l-alerts').textContent = sec.totalAlerts ?? '—';
+    document.getElementById('sec-alerts-count').textContent = sec.totalAlerts ?? '0';
+    document.getElementById('sec-phish').textContent = sec.phishingDomains ?? '—';
+
+    // AI chips
+    const provs = s.ai?.providers ?? [];
+    const configured = (provs.length ?? 0);
+    const aiChip = document.getElementById('chip-ai');
+    aiChip.innerHTML = `<div class="dot ${configured>0?'dot-ok':'dot-warn'}"></div>AI: ${configured} aktiv`;
+    document.getElementById('nb-ai').textContent = configured;
+    document.getElementById('chip-gw').innerHTML = `<div class="dot dot-ok"></div>Gateway: OK`;
+    document.getElementById('chip-redis').innerHTML = `<div class="dot dot-ok"></div>Redis: OK`;
+    document.getElementById('chip-sec').innerHTML = `<div class="dot dot-ok"></div>Zero-Trust: Aktiv`;
+
+  } catch (e) { console.error('Status load error', e); }
+}
+
+async function loadStats() {
+  try {
+    const s = await fetch(API + '/api/v1/global/stats').then(r => r.json()).catch(() => null);
+    if (!s) return;
+    document.getElementById('k-srv').textContent  = fmt(s.totalServers ?? 0);
+    document.getElementById('k-mem').textContent  = fmt(s.totalMembers ?? 0);
+    document.getElementById('k-ai').textContent   = fmt(s.aiRequestsToday ?? 0);
+    document.getElementById('k-cmd').textContent  = fmt(s.commandsToday ?? 0);
+    document.getElementById('k-tix').textContent  = fmt(s.ticketsToday ?? 0);
+    document.getElementById('k-msg').textContent  = fmt(s.messagesToday ?? 0);
+    document.getElementById('k-ban').textContent  = fmt(s.bansToday ?? 0);
+    document.getElementById('k-warn').textContent = fmt(s.warningsToday ?? 0);
+  } catch (e) { console.error('Stats load error', e); }
+}
+
+async function loadProviders() {
+  try {
+    const providers = await fetch(API + '/api/v1/ai/providers').then(r => r.json());
+    const configured = providers.filter(p => p.configured).length;
+    document.getElementById('prov-count').textContent = `${configured} aktiv`;
+
+    const html = providers.map(p => `
+      <div class="prov-item">
+        <div>
+          <div class="prov-name">${esc(p.name)}</div>
+          <div class="prov-model">${esc(p.models[0] ?? 'n/a')}</div>
+        </div>
+        <span class="${p.configured ? 'prov-ok' : 'prov-off'}">${p.configured ? '✅ Aktiv' : '○ Inaktiv'}</span>
+      </div>
+    `).join('');
+
+    const el = document.getElementById('prov-list');
+    if (el) el.innerHTML = html;
+
+    const modules = await fetch(API + '/api/v1/ai/modules').then(r => r.json());
+    document.getElementById('mod-count').textContent = `${modules.length} aktiv`;
+    const grid = document.getElementById('mod-grid');
+    if (grid) {
+      grid.innerHTML = modules.map(m => `
+        <div class="mod-chip">
+          <div class="mod-name">${esc(m.name)}</div>
+          <div class="mod-meta">Ziel: ${m.latencyTargetMs}ms</div>
+        </div>
+      `).join('');
+    }
+  } catch (e) { console.error('Providers error', e); }
+}
+
+async function loadProvidersFull() {
+  try {
+    const providers = await fetch(API + '/api/v1/ai/providers').then(r => r.json());
+    const el = document.getElementById('prov-full-list');
+    if (!el) return;
+    el.innerHTML = providers.map(p => `
+      <div class="prov-item" style="margin-bottom:8px">
+        <div>
+          <div class="prov-name">${esc(p.name)} <span style="color:var(--dim);font-size:10px">(${esc(p.id)})</span></div>
+          <div class="prov-model">${p.models.slice(0,3).map(m=>esc(m)).join(' · ')}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+          <span class="${p.configured?'prov-ok':'prov-off'}">${p.configured?'✅ Konfiguriert':'○ Nicht konfiguriert'}</span>
+          <span style="font-size:10px;color:var(--dim)">P${p.priority} · $${p.costInPer1k}/1k in</span>
+        </div>
+      </div>
+    `).join('');
+  } catch {}
+}
+
+async function loadServers() {
+  try {
+    const data = await fetch(API + '/api/v1/global/servers').then(r => r.json());
+    const el = document.getElementById('servers-list');
+    if (!el || !data.servers?.length) { if(el) el.textContent = 'Keine Server-Daten verfügbar.'; return; }
+    el.innerHTML = data.servers.slice(0, 20).map(s => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(124,58,237,.07)">
+        <div>
+          <span style="font-size:13px;font-weight:600">${esc(s.name ?? 'Unbekannt')}</span>
+          <span style="font-size:11px;color:var(--muted);margin-left:8px">${esc(s.guildId ?? '')}</span>
+        </div>
+        <span style="font-size:11px;color:var(--muted)">${fmt(s.memberCount ?? 0)} Mitglieder</span>
+      </div>
+    `).join('') + `<div style="font-size:11px;color:var(--muted);padding-top:10px">Gesamt: ${data.count ?? 0} Server</div>`;
+  } catch {}
+}
+
+// ── SSE Stream ────────────────────────────────────────────────────────────────
+function connectSSE() {
+  const es = new EventSource(API + '/api/v1/stream');
+
+  es.addEventListener('telemetry', e => {
+    try {
+      const d = JSON.parse(e.data);
+      // Update live metrics
+      document.getElementById('l-ram').textContent  = (d.ramMb ?? '—') + ' MB';
+      document.getElementById('l-heap').textContent = (d.heapMb ?? '—') + ' MB';
+      document.getElementById('l-up').textContent   = formatUptime(d.uptime ?? 0);
+      document.getElementById('p-ram').textContent  = (d.ramMb ?? '—') + ' MB';
+      document.getElementById('p-heap').textContent = (d.heapMb ?? '—') + ' MB';
+      document.getElementById('p-up').textContent   = formatUptime(d.uptime ?? 0);
+      document.getElementById('uptime-chip').textContent = 'Uptime: ' + formatUptime(d.uptime ?? 0);
+
+      // RAM chart
+      ramHistory.push(d.ramMb ?? 0);
+      if (ramHistory.length > MAX_RAM_PTS) ramHistory.shift();
+      renderRamChart();
+    } catch {}
+  });
+
+  es.addEventListener('security', e => {
+    try {
+      const alert = JSON.parse(e.data);
+      secEvents.unshift(alert);
+      if (secEvents.length > 100) secEvents.pop();
+      renderSecTable();
+      addLog({ cls: 'log-sec', msg: `🚨 ${alert.threat ?? 'ALERT'} | Guild: ${(String(alert.guildId ?? '?')).slice(-8)} | Akteur: <@${alert.actorId ?? '?'}>` });
+      document.getElementById('sec-alerts-count').textContent = secEvents.length;
+    } catch {}
+  });
+
+  es.addEventListener('ai_log', e => {
+    try {
+      const d = JSON.parse(e.data);
+      addLog({ cls: 'log-ai', msg: `🤖 ${d.module ?? 'AI'}: ${String(d.output ?? d.result ?? '').slice(0, 100)}` });
+    } catch {}
+  });
+
+  es.onerror = () => {
+    document.getElementById('sys-status').textContent = 'Reconnecting…';
+    setTimeout(() => { es.close(); connectSSE(); }, 5000);
+  };
+}
+
+// ── UI helpers ─────────────────────────────────────────────────────────────────
+function addLog({ cls = 'log-ok', msg = '' }) {
+  const addToStream = (streamId) => {
+    const stream = document.getElementById(streamId);
+    if (!stream) return;
+    const div = document.createElement('div');
+    div.className = `log-item ${cls} slide-in`;
+    div.innerHTML = `<span class="log-t">${new Date().toLocaleTimeString('de-DE')}</span><span class="log-msg">${esc(msg)}</span>`;
+    stream.prepend(div);
+    while (stream.children.length > MAX_LOG) stream.removeChild(stream.lastChild);
+  };
+  addToStream('main-log-stream');
+  addToStream('full-log-stream');
+}
+
+function renderSecTable() {
+  const tbody = document.getElementById('sec-tbody');
+  document.getElementById('sec-count').textContent = secEvents.length;
+  if (!secEvents.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">🟢 Keine Sicherheitsereignisse</td></tr>';
+    return;
+  }
+  tbody.innerHTML = secEvents.slice(0, 30).map(e => `
+    <tr>
+      <td>${esc(String(e.threat ?? '—'))}</td>
+      <td><code style="font-family:var(--mono);font-size:10px">${esc(String(e.guildId ?? '—').slice(-8))}</code></td>
+      <td><code style="font-family:var(--mono);font-size:10px">${esc(String(e.actorId ?? '—').slice(-8))}</code></td>
+      <td><span class="sev sev${Math.min(5,Math.max(1,e.severity??1))}">${e.severity??1}/5</span></td>
+      <td>${e.timestamp ? new Date(e.timestamp).toLocaleTimeString('de-DE') : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+function renderRamChart() {
+  const chart = document.getElementById('ram-chart');
+  if (!chart || !ramHistory.length) return;
+  const max = Math.max(...ramHistory, 100);
+  chart.innerHTML = ramHistory.map(v => {
+    const pct = Math.max(3, Math.round((v / max) * 100));
+    const hue = Math.round(120 - (v / max) * 120);
+    return `<div class="chart-bar" style="height:${pct}%;background:hsl(${hue},75%,55%)" title="${v}MB"></div>`;
+  }).join('');
+}
+
+function updateDefcon(level) {
+  const names = ['', 'PANIC', 'CRITICAL', 'HIGH', 'ELEVATED', 'NORMAL'];
+  const descs = ['', 'Notfall-Lockdown. Alle Aktionen ausgesetzt.', 'Kritische Bedrohung. Anti-Raid-Modus.', 'Hohe Alarmbereitschaft. AutoMod maximiert.', 'Erhöhte Überwachung.', 'Normalbetrieb. Zero-Trust aktiv.'];
+  const box = document.getElementById('defcon-box');
+  box.className = 'defcon-box defcon-' + level;
+  document.getElementById('defcon-num').textContent = level;
+  document.getElementById('defcon-name').textContent = names[level];
+  document.getElementById('defcon-desc').textContent = descs[level];
+  const badge = document.getElementById('defcon-badge');
+  badge.textContent = names[level];
+  badge.className = 'badge ' + (level===5?'badge-ok':level===4?'badge-warn':level===3?'badge-warn':'badge-red');
+}
+
+function formatUptime(s) {
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  return h>0 ? `${h}h ${m}m` : m>0 ? `${m}m ${sec}s` : `${sec}s`;
+}
+
+function fmt(n) {
+  const num = Number(n);
+  if (num >= 1e6) return (num/1e6).toFixed(1)+'M';
+  if (num >= 1e3) return (num/1e3).toFixed(1)+'K';
+  return num.toLocaleString('de-DE');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+loadAll();
+connectSSE();
+setInterval(loadAll, 30_000);
+setInterval(loadStats, 10_000);
+</script>
+</body>
+</html>

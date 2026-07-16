@@ -1,0 +1,118 @@
+version: '3.9'
+
+services:
+  # ── Nexus App ──────────────────────────────────────────────
+  nexus-api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://nexus:nexus@postgres:5432/nexus_omega
+      - DIRECT_URL=postgresql://nexus:nexus@postgres:5432/nexus_omega
+      - REDIS_URL=redis://redis:6379
+      - KAFKA_BROKERS=redpanda:9092
+      - CLICKHOUSE_URL=http://clickhouse:8123
+      - QDRANT_URL=http://qdrant:6333
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - nexus-net
+
+  # ── PostgreSQL 15 ──────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: nexus
+      POSTGRES_DB: nexus_omega
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus -d nexus_omega"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    networks:
+      - nexus-net
+
+  # ── Redis 7 ───────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "6379:6379"
+    networks:
+      - nexus-net
+
+  # ── Redpanda (Kafka-compatible) ────────────────────────────
+  redpanda:
+    image: redpandadata/redpanda:latest
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --overprovisioned
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:9092
+    ports:
+      - "9092:9092"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    networks:
+      - nexus-net
+
+  # ── ClickHouse ─────────────────────────────────────────────
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    environment:
+      CLICKHOUSE_DB: nexus_analytics
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - nexus-net
+
+  # ── Qdrant Vector DB ───────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - nexus-net
+
+volumes:
+  pg_data:
+  redis_data:
+  redpanda_data:
+  clickhouse_data:
+  qdrant_data:
+
+networks:
+  nexus-net:
+    driver: bridge
