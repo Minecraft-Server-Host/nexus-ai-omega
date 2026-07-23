@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Nexus AI Omega — Team Panel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#04050e;--bg2:#080a1a;--bg3:#0d1022;--bg4:#111326;
+  --pu:#7c3aed;--pu2:#a855f7;--pu3:#c084fc;
+  --cy:#06ffa5;--bl:#0ea5e9;--pk:#f43f5e;--am:#fbbf24;--mn:#10b981;
+  --tx:#eaecff;--mu:#8891b8;--di:#4b5380;
+  --glass:rgba(13,16,40,.85);--glass2:rgba(8,10,26,.9);
+  --bo:rgba(124,58,237,.22);--bo2:rgba(124,58,237,.1);--bo3:rgba(255,255,255,.05);
+  --r:14px;--r2:10px;--r3:6px;
+  --font:'Outfit',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+  --sidebar-w:240px;
+}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--font);overflow:hidden}
+
+/* ── LAYOUT ── */
+#app{display:flex;height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;height:100%;
+  background:var(--glass2);border-right:1px solid var(--bo);
+  display:flex;flex-direction:column;overflow:hidden;
+  backdrop-filter:blur(20px);position:relative;z-index:100
+}
+.sidebar::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--pu),var(--pu2),var(--cy))
+}
+.sidebar-logo{
+  padding:20px 18px 16px;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--bo2)
+}
+.logo-icon{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,var(--pu),var(--pu2));
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:0 0 14px rgba(124,58,237,.4)
+}
+.logo-text{font-weight:800;font-size:.95rem;line-height:1.2}
+.logo-sub{font-size:.65rem;color:var(--mu);font-family:var(--mono)}
+
+/* Nav */
+.sidebar-nav{flex:1;overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:2px}
+.sidebar-nav::-webkit-scrollbar{width:3px}
+.sidebar-nav::-webkit-scrollbar-thumb{background:var(--bo);border-radius:2px}
+.nav-section{font-size:.64rem;font-weight:700;color:var(--di);text-transform:uppercase;letter-spacing:.08em;padding:10px 10px 5px}
+.nav-item{
+  display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--r3);
+  cursor:pointer;color:var(--mu);transition:all .18s;border:none;background:none;
+  font-family:var(--font);font-size:.86rem;font-weight:500;width:100%;text-align:left;
+  position:relative;text-decoration:none
+}
+.nav-item:hover{background:rgba(124,58,237,.08);color:var(--tx)}
+.nav-item.active{background:rgba(124,58,237,.16);color:var(--pu3);font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;background:var(--pu2);border-radius:2px}
+.nav-icon{font-size:1rem;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;padding:2px 7px;border-radius:99px;font-size:.62rem;font-weight:700;background:rgba(244,63,94,.15);color:var(--pk)}
+
+/* User card in sidebar */
+.sidebar-user{
+  padding:14px 16px;border-top:1px solid var(--bo2);
+  display:flex;align-items:center;gap:10px;cursor:pointer;
+  transition:background .18s
+}
+.sidebar-user:hover{background:rgba(255,255,255,.04)}
+.user-av{
+  width:34px;height:34px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--pu),var(--cy));
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  position:relative
+}
+.user-av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.user-av-status{
+  position:absolute;bottom:1px;right:1px;width:8px;height:8px;
+  border-radius:50%;background:var(--cy);border:2px solid var(--bg2)
+}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:.84rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-role{font-size:.68rem;color:var(--mu);font-family:var(--mono);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── MAIN ── */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{
+  height:56px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;background:var(--glass2);border-bottom:1px solid var(--bo2);
+  backdrop-filter:blur(20px)
+}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.page-title{font-size:1.1rem;font-weight:800;letter-spacing:-.01em}
+.page-breadcrumb{font-size:.75rem;color:var(--mu);font-family:var(--mono)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-btn{
+  padding:6px 14px;border-radius:var(--r3);border:1px solid var(--bo2);
+  background:rgba(255,255,255,.04);color:var(--mu);
+  font-family:var(--font);font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s
+}
+.topbar-btn:hover{background:rgba(124,58,237,.12);border-color:var(--bo);color:var(--tx)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--cy);animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(6,255,165,.4)}60%{box-shadow:0 0 0 6px transparent}}
+
+.content{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px}
+.content::-webkit-scrollbar{width:4px}
+.content::-webkit-scrollbar-thumb{background:rgba(124,58,237,.3);border-radius:2px}
+
+/* ── PAGES ── */
+.page{display:none;flex-direction:column;gap:20px;animation:pg-in .3s ease}
+.page.active{display:flex}
+@keyframes pg-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── CARDS ── */
+.card{
+  background:var(--glass);border:1px solid var(--bo2);border-radius:var(--r);
+  padding:22px;backdrop-filter:blur(12px);position:relative;overflow:hidden
+}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(124,58,237,.3),transparent)}
+.card-title{font-size:.85rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title-icon{font-size:1rem}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.stat-card{
+  background:var(--glass);border:1px solid var(--bo2);border-radius:var(--r2);
+  padding:18px;transition:all .2s;cursor:default;position:relative;overflow:hidden
+}
+.stat-card:hover{border-color:var(--bo);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent,var(--pu2));opacity:.5}
+.stat-label{font-size:.72rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.stat-value{font-size:1.9rem;font-weight:900;font-family:var(--mono);background:var(--grd,linear-gradient(135deg,var(--pu2),var(--cy)));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1}
+.stat-sub{font-size:.72rem;color:var(--di);margin-top:5px}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;border-radius:var(--r2);border:1px solid var(--bo2)}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+thead{background:rgba(255,255,255,.03)}
+th{padding:11px 14px;text-align:left;font-size:.72rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--bo2)}
+td{padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.04);color:var(--tx);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.02)}
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:99px;font-size:.7rem;font-weight:700;white-space:nowrap
+}
+.badge-owner{background:rgba(251,191,36,.15);color:var(--am);border:1px solid rgba(251,191,36,.3)}
+.badge-coowner{background:rgba(168,85,247,.15);color:var(--pu3);border:1px solid rgba(168,85,247,.3)}
+.badge-manager{background:rgba(244,63,94,.1);color:var(--pk);border:1px solid rgba(244,63,94,.2)}
+.badge-dev{background:rgba(14,165,233,.1);color:var(--bl);border:1px solid rgba(14,165,233,.2)}
+.badge-mod{background:rgba(6,255,165,.1);color:var(--cy);border:1px solid rgba(6,255,165,.2)}
+.badge-team{background:rgba(255,255,255,.06);color:var(--mu);border:1px solid var(--bo2)}
+.badge-ok{background:rgba(6,255,165,.1);color:var(--cy);border:1px solid rgba(6,255,165,.2)}
+.badge-warn{background:rgba(251,191,36,.1);color:var(--am);border:1px solid rgba(251,191,36,.2)}
+.badge-err{background:rgba(244,63,94,.1);color:var(--pk);border:1px solid rgba(244,63,94,.2)}
+.badge-suspended{background:rgba(244,63,94,.08);color:#fb7185;border:1px solid rgba(244,63,94,.2)}
+
+/* ── ACTION BUTTONS ── */
+.btn-sm{
+  padding:5px 11px;border-radius:var(--r3);border:none;cursor:pointer;
+  font-family:var(--font);font-size:.76rem;font-weight:700;transition:all .18s
+}
+.btn-primary{background:linear-gradient(135deg,var(--pu),var(--pu2));color:#fff}
+.btn-primary:hover{opacity:.85}
+.btn-danger{background:rgba(244,63,94,.15);color:var(--pk);border:1px solid rgba(244,63,94,.2)}
+.btn-danger:hover{background:rgba(244,63,94,.25)}
+.btn-success{background:rgba(6,255,165,.1);color:var(--cy);border:1px solid rgba(6,255,165,.2)}
+
+/* ── LOG FEED ── */
+.log-feed{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto}
+.log-feed::-webkit-scrollbar{width:3px}
+.log-feed::-webkit-scrollbar-thumb{background:var(--bo);border-radius:2px}
+.log-item{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 12px;border-radius:var(--r3);background:rgba(255,255,255,.03);border:1px solid var(--bo2);
+  font-size:.8rem;line-height:1.4
+}
+.log-ts{color:var(--di);font-family:var(--mono);font-size:.7rem;white-space:nowrap;flex-shrink:0}
+.log-action{font-family:var(--mono);font-size:.72rem;padding:2px 6px;border-radius:3px;background:rgba(124,58,237,.12);color:var(--pu3);flex-shrink:0}
+.log-detail{color:var(--mu);flex:1}
+
+/* ── STATUS INDICATORS ── */
+.status-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bo2)}
+.status-row:last-child{border-bottom:none}
+.status-icon{font-size:1.1rem;width:24px;flex-shrink:0;text-align:center}
+.status-label{font-size:.85rem;font-weight:600;flex:1}
+.status-val{font-size:.8rem;color:var(--mu);font-family:var(--mono)}
+.dot-ok{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--cy);box-shadow:0 0 6px var(--cy)}
+.dot-err{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--pk);box-shadow:0 0 6px var(--pk)}
+.dot-warn{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--am);box-shadow:0 0 6px var(--am)}
+
+/* ── SEARCH ── */
+.search-bar{
+  display:flex;gap:10px;margin-bottom:14px
+}
+.search-input{
+  flex:1;padding:10px 14px;border-radius:var(--r3);
+  background:rgba(255,255,255,.05);border:1px solid var(--bo2);
+  color:var(--tx);font-family:var(--font);font-size:.86rem;outline:none;transition:border-color .2s
+}
+.search-input:focus{border-color:var(--pu2)}
+.search-input::placeholder{color:var(--di)}
+
+/* ── ACCESS DENIED ── */
+.access-denied{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;text-align:center;padding:40px;gap:16px
+}
+.ad-icon{font-size:64px}
+.ad-title{font-size:1.6rem;font-weight:900;color:var(--pk)}
+.ad-sub{font-size:.9rem;color:var(--mu);max-width:400px;line-height:1.6}
+
+/* ── MOBILE SIDEBAR TOGGLE ── */
+@media(max-width:768px){
+  .sidebar{position:fixed;left:-240px;z-index:999;transition:left .3s}
+  .sidebar.open{left:0}
+  .main{width:100%}
+  .menu-toggle{display:flex!important}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+.menu-toggle{display:none;width:36px;height:36px;border-radius:var(--r3);border:1px solid var(--bo2);background:transparent;cursor:pointer;align-items:center;justify-content:center;font-size:1.1rem;color:var(--mu)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:998}
+.overlay.show{display:block}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .25s}
+.modal-bg.open{opacity:1;pointer-events:auto}
+.modal{background:var(--bg3);border:1px solid var(--bo);border-radius:var(--r);padding:28px;width:100%;max-width:440px;position:relative;transform:translateY(20px);transition:transform .25s}
+.modal-bg.open .modal{transform:translateY(0)}
+.modal-title{font-size:1rem;font-weight:800;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between}
+.modal-close{background:none;border:none;color:var(--mu);cursor:pointer;font-size:1.2rem;padding:4px}
+.modal-close:hover{color:var(--tx)}
+.modal-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.modal-label{font-size:.76rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.modal-input,.modal-select{
+  padding:10px 14px;border-radius:var(--r3);background:rgba(255,255,255,.05);
+  border:1px solid var(--bo2);color:var(--tx);font-family:var(--font);font-size:.88rem;outline:none
+}
+.modal-input:focus,.modal-select:focus{border-color:var(--pu2)}
+.modal-select option{background:var(--bg3)}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:rgba(124,58,237,.3);border-radius:2px}
+</style>
+</head>
+<body>
+<!-- Mobile overlay -->
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div id="app">
+
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-text">Nexus AI Omega</div>
+      <div class="logo-sub">TEAM PANEL v1.0</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">HAUPTMENÜ</div>
+    <button class="nav-item active" onclick="navTo('home')" data-page="home"><span class="nav-icon">🏠</span>Dashboard</button>
+    <button class="nav-item" onclick="navTo('bot')" data-page="bot"><span class="nav-icon">🤖</span>Discord Bot</button>
+    <button class="nav-item" onclick="navTo('ai')" data-page="ai"><span class="nav-icon">🧠</span>AI Dashboard</button>
+
+    <div class="nav-section">VERWALTUNG</div>
+    <button class="nav-item" onclick="navTo('servers')" data-page="servers"><span class="nav-icon">🌐</span>Server</button>
+    <button class="nav-item" onclick="navTo('users')" data-page="users"><span class="nav-icon">👥</span>Nutzer</button>
+    <button class="nav-item" onclick="navTo('team')" data-page="team"><span class="nav-icon">🛡️</span>Nexus Team</button>
+
+    <div class="nav-section">SYSTEM</div>
+    <button class="nav-item" onclick="navTo('logs')" data-page="logs"><span class="nav-icon">📋</span>Logs</button>
+    <button class="nav-item" onclick="navTo('settings')" data-page="settings"><span class="nav-icon">⚙️</span>Einstellungen</button>
+  </nav>
+
+  <div class="sidebar-user" onclick="navTo('settings')">
+    <div class="user-av" id="userAv">👤<div class="user-av-status"></div></div>
+    <div class="user-info">
+      <div class="user-name" id="userName">Laden...</div>
+      <div class="user-role" id="userRole">—</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+      <div>
+        <div class="page-title" id="pageTitle">Dashboard</div>
+        <div class="page-breadcrumb" id="pageBreadcrumb">Nexus AI Omega › Dashboard</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-dot" title="Bot online"></div>
+      <button class="topbar-btn" onclick="refreshPage()">🔄 Aktualisieren</button>
+      <button class="topbar-btn" onclick="doLogout()">🚪 Logout</button>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+
+    <!-- ════ HOME ════ -->
+    <div class="page active" id="page-home">
+      <div class="stats-grid" id="homeStats">
+        <div class="stat-card" style="--accent:var(--cy)"><div class="stat-label">Bot Server</div><div class="stat-value" id="st-servers">—</div><div class="stat-sub">Discord Guilds</div></div>
+        <div class="stat-card" style="--accent:var(--pu2)"><div class="stat-label">Ping</div><div class="stat-value" id="st-ping">—</div><div class="stat-sub">ms Latenz</div></div>
+        <div class="stat-card" style="--accent:var(--bl)"><div class="stat-label">AI Anfragen</div><div class="stat-value" id="st-ai">—</div><div class="stat-sub">Gesamt</div></div>
+        <div class="stat-card" style="--accent:var(--am)"><div class="stat-label">Panel Nutzer</div><div class="stat-value" id="st-users">—</div><div class="stat-sub">Registriert</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" class="two-col">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">👤</span>Account Info</div>
+          <div id="accountInfo" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">⚙️</span>System Status</div>
+          <div id="systemStatus"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">📋</span>Letzte Aktivitäten</div>
+        <div class="log-feed" id="recentLogs"></div>
+      </div>
+    </div>
+
+    <!-- ════ BOT ════ -->
+    <div class="page" id="page-bot">
+      <div class="stats-grid" id="botStats"></div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">📊</span>Bot Details</div>
+        <div id="botDetails"></div>
+      </div>
+    </div>
+
+    <!-- ════ AI ════ -->
+    <div class="page" id="page-ai">
+      <div class="stats-grid" id="aiStats"></div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🔌</span>KI-Provider Status</div>
+        <div id="aiProviders"></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">📜</span>Letzte KI-Anfragen</div>
+        <div class="log-feed" id="aiLogs"></div>
+      </div>
+    </div>
+
+    <!-- ════ SERVERS ════ -->
+    <div class="page" id="page-servers">
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🌐</span>Alle Server</div>
+        <div class="search-bar"><input class="search-input" id="serverSearch" placeholder="Server suchen..." oninput="filterServers()"/></div>
+        <div class="table-wrap"><table><thead><tr><th>Name</th><th>ID</th><th>Mitglieder</th><th>Aktionen</th></tr></thead><tbody id="serversTable"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ════ USERS ════ -->
+    <div class="page" id="page-users">
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">👥</span>Nutzer Verwaltung</div>
+        <div class="search-bar">
+          <input class="search-input" id="userSearch" placeholder="Nutzer suchen..." oninput="filterUsers()"/>
+          <button class="btn-sm btn-primary" onclick="openInviteModal()">➕ Einladen</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Nutzer</th><th>Discord ID</th><th>Rolle</th><th>Status</th><th>Dashboard</th><th>Letzter Login</th><th>Aktionen</th></tr></thead>
+            <tbody id="usersTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ TEAM ════ -->
+    <div class="page" id="page-team">
+      <div class="stats-grid" id="teamStats"></div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🛡️</span>Nexus Team Mitglieder</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mitglied</th><th>Discord ID</th><th>Rolle</th><th>Perm. Level</th><th>Status</th><th>Aktionen</th></tr></thead>
+            <tbody id="teamTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ LOGS ════ -->
+    <div class="page" id="page-logs">
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">📋</span>System Logs</div>
+        <div class="search-bar">
+          <select class="search-input" id="logTypeFilter" onchange="loadLogs()" style="max-width:200px">
+            <option value="">Alle Typen</option>
+            <option value="LOGIN_OK">Login</option>
+            <option value="LOGIN_FAIL">Login Fehler</option>
+            <option value="REGISTER">Registrierung</option>
+            <option value="USER_UPDATE">Nutzer Update</option>
+            <option value="STATUS_CHANGE">Status Änderung</option>
+            <option value="TEAM_PROMOTE">Beförderung</option>
+            <option value="PASSWORD_CHANGE">Passwort</option>
+            <option value="BOT_LEAVE_SERVER">Bot Server Leave</option>
+          </select>
+          <button class="btn-sm btn-primary" onclick="loadLogs()">🔄 Laden</button>
+        </div>
+        <div class="log-feed" id="logsContainer"></div>
+      </div>
+    </div>
+
+    <!-- ════ SETTINGS ════ -->
+    <div class="page" id="page-settings">
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">👤</span>Account Einstellungen</div>
+        <div id="settingsAccountInfo" style="margin-bottom:20px"></div>
+        <form onsubmit="changePassword(event)" style="display:flex;flex-direction:column;gap:14px;max-width:400px">
+          <div class="modal-field"><div class="modal-label">Aktuelles Passwort</div><input class="modal-input" type="password" id="curPw" placeholder="••••••••" required/></div>
+          <div class="modal-field"><div class="modal-label">Neues Passwort</div><input class="modal-input" type="password" id="newPw" placeholder="Mindestens 8 Zeichen" minlength="8" required/></div>
+          <div class="modal-field"><div class="modal-label">Passwort bestätigen</div><input class="modal-input" type="password" id="newPw2" placeholder="••••••••" required/></div>
+          <button type="submit" class="btn-sm btn-primary" style="align-self:flex-start;padding:10px 20px">🔐 Passwort ändern</button>
+        </form>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">🚪</span>Session</div>
+        <button class="btn-sm btn-danger" onclick="doLogout()" style="padding:10px 20px">🚪 Ausloggen</button>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ MODALS ══ -->
+<!-- Edit User Modal -->
+<div class="modal-bg" id="editUserModal">
+  <div class="modal">
+    <div class="modal-title">✏️ Nutzer bearbeiten <button class="modal-close" onclick="closeModal('editUserModal')">✕</button></div>
+    <input type="hidden" id="editUserId"/>
+    <div class="modal-field"><div class="modal-label">Rolle</div>
+      <select class="modal-select" id="editRole">
+        <option value="TEAM">👥 Team</option>
+        <option value="SUPPORT">🎫 Support</option>
+        <option value="MODERATOR">🛡️ Moderator</option>
+        <option value="AI_MANAGER">🤖 AI Manager</option>
+        <option value="DEVELOPER">⚙️ Developer</option>
+        <option value="MANAGER">🛡 Manager</option>
+        <option value="CO_OWNER">💎 Co-Owner</option>
+        <option value="OWNER">👑 Owner</option>
+      </select>
+    </div>
+    <div class="modal-field"><div class="modal-label">Permission Level (0–100)</div><input class="modal-input" type="number" id="editPerm" min="0" max="100"/></div>
+    <div class="modal-field"><div class="modal-label">Dashboard Zugang</div>
+      <select class="modal-select" id="editDash">
+        <option value="1">✅ Aktiviert</option>
+        <option value="0">❌ Deaktiviert</option>
+      </select>
+    </div>
+    <div class="modal-field"><div class="modal-label">Status</div>
+      <select class="modal-select" id="editStatus">
+        <option value="active">🟢 Aktiv</option>
+        <option value="suspended">🟡 Suspendiert</option>
+        <option value="banned">🔴 Gebannt</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('editUserModal')" style="padding:8px 16px;background:rgba(255,255,255,.06);border:1px solid var(--bo2);border-radius:var(--r3);cursor:pointer;color:var(--mu)">Abbrechen</button>
+      <button class="btn-sm btn-primary" onclick="saveUser()" style="padding:8px 18px">💾 Speichern</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal-bg" id="resetPwModal">
+  <div class="modal">
+    <div class="modal-title">🔑 Passwort zurücksetzen <button class="modal-close" onclick="closeModal('resetPwModal')">✕</button></div>
+    <input type="hidden" id="resetUserId"/>
+    <div class="modal-field"><div class="modal-label">Neues Passwort</div><input class="modal-input" type="password" id="resetNewPw" placeholder="Mindestens 8 Zeichen" minlength="8"/></div>
+    <div class="modal-actions">
+      <button class="btn-sm" onclick="closeModal('resetPwModal')" style="padding:8px 16px;background:rgba(255,255,255,.06);border:1px solid var(--bo2);border-radius:var(--r3);cursor:pointer;color:var(--mu)">Abbrechen</button>
+      <button class="btn-sm btn-primary" onclick="doResetPw()" style="padding:8px 18px">🔐 Zurücksetzen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   Nexus AI Omega — Team Panel Script v1.0
+   Full auth, CRUD, real-time stats, permission checks
+════════════════════════════════════════════════════════ */
+
+// ── State ─────────────────────────────────────────────────────────────────
+let currentUser = null;
+let allUsers = [];
+let allServers = [];
+let token = localStorage.getItem('nexus_token') || '';
+
+// ── API Helper ────────────────────────────────────────────────────────────
+async function api(path, opts={}) {
+  const res = await fetch(path, {
+    ...opts,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(opts.headers || {}),
+    },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  if (res.status === 401) { logout(); return null; }
+  return res.json();
+}
+
+// ── Auth Check ────────────────────────────────────────────────────────────
+async function checkAuth() {
+  const data = await api('/auth/validate');
+  if (!data || !data.valid) { window.location.href = '/login'; return; }
+  if (!data.user.dashboard_access) {
+    document.getElementById('content').innerHTML = `
+      <div class="access-denied">
+        <div class="ad-icon">🔒</div>
+        <div class="ad-title">Zugang Verweigert</div>
+        <div class="ad-sub">Du bist nicht berechtigt, auf das Nexus Team Dashboard zuzugreifen.<br><br>Kontaktiere einen Owner oder Co-Owner für Freischaltung.</div>
+        <button class="btn-sm btn-primary" onclick="doLogout()" style="margin-top:16px;padding:10px 24px">🚪 Logout</button>
+      </div>`;
+    return;
+  }
+  currentUser = data.user;
+  updateSidebarUser(currentUser);
+  await loadHomePage();
+}
+
+function updateSidebarUser(user) {
+  document.getElementById('userName').textContent = user.username || '—';
+  document.getElementById('userRole').textContent = `${roleEmoji(user.role)} ${user.role} · Perm: ${user.permission_level}`;
+  if (user.avatar) {
+    document.getElementById('userAv').innerHTML = `<img src="${user.avatar}" alt="avatar"/><div class="user-av-status"></div>`;
+  }
+}
+
+function roleEmoji(role) {
+  const map = { OWNER:'👑', CO_OWNER:'💎', MANAGER:'🛡', DEVELOPER:'⚙️', AI_MANAGER:'🤖', MODERATOR:'🛡️', SUPPORT:'🎫', TEAM:'👥' };
+  return map[role] || '👤';
+}
+function roleBadge(role) {
+  const cls = { OWNER:'badge-owner', CO_OWNER:'badge-coowner', MANAGER:'badge-manager', DEVELOPER:'badge-dev', AI_MANAGER:'badge-dev', MODERATOR:'badge-mod', SUPPORT:'badge-mod', TEAM:'badge-team' };
+  return `<span class="badge ${cls[role]||'badge-team'}">${roleEmoji(role)} ${role}</span>`;
+}
+function statusBadge(s) {
+  if (s==='active') return `<span class="badge badge-ok">● Aktiv</span>`;
+  if (s==='suspended') return `<span class="badge badge-warn">⏸ Suspendiert</span>`;
+  return `<span class="badge badge-err">✕ ${s}</span>`;
+}
+function fmtDate(ts) {
+  if (!ts) return '—';
+  return new Date(ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+function fmtMs(ms) {
+  if (!ms) return '—';
+  const h=Math.floor(ms/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000);
+  return `${h}h ${m}m ${s}s`;
+}
+
+// ── Navigation ────────────────────────────────────────────────────────────
+const pageMeta = {
+  home:     ['🏠 Dashboard',     'Dashboard'],
+  bot:      ['🤖 Discord Bot',   'Bot Statistiken'],
+  ai:       ['🧠 AI Dashboard',  'KI System'],
+  servers:  ['🌐 Server',        'Server Verwaltung'],
+  users:    ['👥 Nutzer',        'Nutzer Verwaltung'],
+  team:     ['🛡️ Team',         'Nexus Team'],
+  logs:     ['📋 Logs',          'System Logs'],
+  settings: ['⚙️ Einstellungen', 'Account & Sicherheit'],
+};
+
+function navTo(page) {
+  // Permission gates
+  const highPerms = ['users','team','logs'];
+  if (highPerms.includes(page) && currentUser && currentUser.permission_level < 50) {
+    showToast('Keine Berechtigung für diese Seite.', 'err'); return;
+  }
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.page===page));
+  document.getElementById('page-'+page).classList.add('active');
+  const [title, bc] = pageMeta[page] || ['', page];
+  document.getElementById('pageTitle').textContent = title;
+  document.getElementById('pageBreadcrumb').textContent = `Nexus AI Omega › ${bc}`;
+  closeSidebar();
+
+  // Load page data
+  const loaders = { home:loadHomePage, bot:loadBotPage, ai:loadAiPage, servers:loadServersPage, users:loadUsersPage, team:loadTeamPage, logs:loadLogs, settings:loadSettingsPage };
+  if (loaders[page]) loaders[page]();
+}
+
+// ── HOME ──────────────────────────────────────────────────────────────────
+async function loadHomePage() {
+  const [homeData, statsData] = await Promise.all([
+    api('/panel/home'),
+    api('/panel/stats/overview'),
+  ]);
+  if (!homeData) return;
+
+  const s = statsData?.stats || {};
+  document.getElementById('st-servers').textContent = s.bot_guilds ?? homeData.stats?.bot_servers ?? '—';
+  document.getElementById('st-ping').textContent = homeData.stats?.bot_ping >= 0 ? homeData.stats.bot_ping+'ms' : '—';
+  document.getElementById('st-ai').textContent = s.ai_requests ?? '—';
+  document.getElementById('st-users').textContent = s.panel_users ?? homeData.stats?.total_panel_users ?? '—';
+
+  // Account info
+  const u = homeData.user || currentUser;
+  document.getElementById('accountInfo').innerHTML = [
+    `<div class="status-row"><span class="status-label">Benutzername</span><span class="status-val" style="font-family:var(--mono)">${u.username}</span></div>`,
+    `<div class="status-row"><span class="status-label">Discord ID</span><span class="status-val" style="font-family:var(--mono)">${u.discord_id}</span></div>`,
+    `<div class="status-row"><span class="status-label">Rolle</span>${roleBadge(u.role)}</div>`,
+    `<div class="status-row"><span class="status-label">Permission Level</span><span class="status-val">${u.permission_level}/100</span></div>`,
+    `<div class="status-row"><span class="status-label">Status</span>${statusBadge(u.status)}</div>`,
+  ].join('');
+
+  // System status
+  const sys = homeData.system || {};
+  document.getElementById('systemStatus').innerHTML = [
+    `<div class="status-row"><span class="status-icon">⚡</span><span class="status-label">API Server</span><span class="dot-ok"></span></div>`,
+    `<div class="status-row"><span class="status-icon">🤖</span><span class="status-label">Discord Bot</span><span class="${homeData.stats?.bot_ping >= 0 ? 'dot-ok':'dot-err'}"></span></div>`,
+    `<div class="status-row"><span class="status-icon">💾</span><span class="status-label">RAM Verbrauch</span><span class="status-val">${sys.memory_mb ?? '—'} MB</span></div>`,
+    `<div class="status-row"><span class="status-icon">⏱️</span><span class="status-label">Uptime</span><span class="status-val">${fmtMs((sys.uptime_ms||0))}</span></div>`,
+    `<div class="status-row"><span class="status-icon">🟢</span><span class="status-label">Node.js</span><span class="status-val">${sys.node_version||'—'}</span></div>`,
+  ].join('');
+
+  // Recent logs
+  const logsData = await api('/panel/logs?limit=8');
+  renderLogs(logsData?.logs || [], 'recentLogs');
+}
+
+// ── BOT ───────────────────────────────────────────────────────────────────
+async function loadBotPage() {
+  const data = await api('/panel/bot');
+  if (!data) return;
+  const b = data.bot || {};
+
+  document.getElementById('botStats').innerHTML = [
+    `<div class="stat-card" style="--accent:var(--cy)"><div class="stat-label">Server</div><div class="stat-value">${b.total_servers??'—'}</div></div>`,
+    `<div class="stat-card" style="--accent:var(--pu2)"><div class="stat-label">Nutzer (Est.)</div><div class="stat-value">${b.total_users??'—'}</div></div>`,
+    `<div class="stat-card" style="--accent:var(--bl)"><div class="stat-label">Ping</div><div class="stat-value">${b.ping>=0?b.ping+'ms':'—'}</div></div>`,
+    `<div class="stat-card" style="--accent:var(--mn)"><div class="stat-label">Aktive Server</div><div class="stat-value">${b.active_servers??'—'}</div></div>`,
+    `<div class="stat-card" style="--accent:var(--am)"><div class="stat-label">Commands Used</div><div class="stat-value">${b.commands_used??'—'}</div></div>`,
+    `<div class="stat-card" style="--accent:var(--pk)"><div class="stat-label">Shards</div><div class="stat-value">${b.shards??'1'}</div></div>`,
+  ].join('');
+
+  document.getElementById('botDetails').innerHTML = [
+    `<div class="status-row"><span class="status-icon">🤖</span><span class="status-label">Bot Tag</span><span class="status-val">${b.tag||'—'}</span></div>`,
+    `<div class="status-row"><span class="status-icon">🆔</span><span class="status-label">Bot ID</span><span class="status-val" style="font-family:var(--mono)">${b.id||'—'}</span></div>`,
+    `<div class="status-row"><span class="status-icon">🟢</span><span class="status-label">Status</span><span class="${b.status==='online'?'dot-ok':'dot-err'}"></span></div>`,
+    `<div class="status-row"><span class="status-icon">⏱️</span><span class="status-label">Uptime</span><span class="status-val">${fmtMs(b.uptime_ms)}</span></div>`,
+  ].join('');
+}
+
+// ── AI ────────────────────────────────────────────────────────────────────
+async function loadAiPage() {
+  const data = await api('/panel/ai');
+  if (!data) return;
+  const ai = data.ai || {};
+
+  document.getElementById('aiStats').innerHTML = [
+    `<div class="stat-card" style="--accent:var(--pu2)"><div class="stat-label">Gesamt Anfragen</div><div class="stat-value">${ai.total_requests??'—'}</div></div>`,
+    `<div class="stat-card" style="--accent:var(--cy)"><div class="stat-label">Aktive Gespräche</div><div class="stat-value">${ai.active_conversations??'—'}</div></div>`,
+    `<div class="stat-card" style="--accent:var(--bl)"><div class="stat-label">Konfigurierte Provider</div><div class="stat-value">${(ai.providers||[]).filter(p=>p.configured).length}</div></div>`,
+  ].join('');
+
+  document.getElementById('aiProviders').innerHTML = (ai.providers||[]).map(p=>`
+    <div class="status-row">
+      <span class="status-icon">🧠</span>
+      <span class="status-label">${p.name.toUpperCase()}</span>
+      <span class="${p.configured?'dot-ok':'dot-warn'}"></span>
+      <span class="status-val">${p.status}</span>
+    </div>`).join('') || '<div style="color:var(--di);padding:12px">Keine Provider-Daten</div>';
+
+  renderLogs(ai.recent_logs||[], 'aiLogs');
+}
+
+// ── SERVERS ───────────────────────────────────────────────────────────────
+async function loadServersPage() {
+  const data = await api('/panel/servers');
+  if (!data) return;
+  allServers = data.servers || [];
+  renderServers(allServers);
+}
+function renderServers(servers) {
+  document.getElementById('serversTable').innerHTML = servers.map(s=>`
+    <tr>
+      <td><strong>${esc(s.name||'—')}</strong></td>
+      <td style="font-family:var(--mono);font-size:.78rem;color:var(--mu)">${s.id}</td>
+      <td>${(s.member_count||0).toLocaleString()}</td>
+      <td>${currentUser?.permission_level>=95?`<button class="btn-sm btn-danger" onclick="leaveServer('${s.id}','${esc(s.name||'')}')">🚪 Verlassen</button>`:'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--di);padding:20px">Keine Server gefunden</td></tr>';
+}
+function filterServers() {
+  const q=document.getElementById('serverSearch').value.toLowerCase();
+  renderServers(allServers.filter(s=>(s.name||'').toLowerCase().includes(q)||(s.id||'').includes(q)));
+}
+async function leaveServer(id, name) {
+  if (!confirm(`Bot wirklich aus "${name}" entfernen?`)) return;
+  const data = await api(`/panel/servers/${id}/leave`,{method:'POST'});
+  if (data?.ok) { showToast('Bot hat Server verlassen.','ok'); loadServersPage(); }
+  else showToast(data?.error||'Fehler','err');
+}
+
+// ── USERS ─────────────────────────────────────────────────────────────────
+async function loadUsersPage() {
+  const data = await api('/auth/users');
+  if (!data) return;
+  allUsers = data.users || [];
+  renderUsers(allUsers);
+}
+function renderUsers(users) {
+  document.getElementById('usersTable').innerHTML = users.map(u=>`
+    <tr>
+      <td><strong>${esc(u.username)}</strong>${u.discord_username?`<div style="font-size:.72rem;color:var(--mu)">${esc(u.discord_username)}</div>`:''}</td>
+      <td style="font-family:var(--mono);font-size:.75rem;color:var(--mu)">${u.discord_id}</td>
+      <td>${roleBadge(u.role)}</td>
+      <td>${statusBadge(u.status)}</td>
+      <td><span class="badge ${u.dashboard_access?'badge-ok':'badge-err'}">${u.dashboard_access?'✅ Ja':'❌ Nein'}</span></td>
+      <td style="font-size:.75rem;color:var(--mu)">${fmtDate(u.last_login)}</td>
+      <td style="display:flex;gap:5px;flex-wrap:wrap">
+        ${canEdit(u)?`<button class="btn-sm btn-primary" onclick="openEditUser(${u.id})">✏️</button><button class="btn-sm btn-danger" onclick="openResetPw(${u.id})">🔑</button>`:''}
+        ${canDelete(u)?`<button class="btn-sm btn-danger" onclick="deleteUser(${u.id},'${esc(u.username)}')">🗑️</button>`:''}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--di);padding:20px">Keine Nutzer gefunden</td></tr>';
+}
+function canEdit(u) { return currentUser && currentUser.permission_level > (u.permission_level||0) || currentUser?.discord_id==='1097607057244442764'; }
+function canDelete(u) { return currentUser?.discord_id==='1097607057244442764' && u.discord_id !== '1097607057244442764'; }
+function filterUsers() {
+  const q=document.getElementById('userSearch').value.toLowerCase();
+  renderUsers(allUsers.filter(u=>(u.username||'').toLowerCase().includes(q)||(u.discord_id||'').includes(q)||(u.role||'').toLowerCase().includes(q)));
+}
+function openEditUser(id) {
+  const u = allUsers.find(x=>x.id===id);
+  if (!u) return;
+  document.getElementById('editUserId').value = id;
+  document.getElementById('editRole').value = u.role || 'TEAM';
+  document.getElementById('editPerm').value = u.permission_level || 0;
+  document.getElementById('editDash').value = u.dashboard_access || 0;
+  document.getElementById('editStatus').value = u.status || 'active';
+  openModal('editUserModal');
+}
+async function saveUser() {
+  const id = document.getElementById('editUserId').value;
+  const role = document.getElementById('editRole').value;
+  const permission_level = parseInt(document.getElementById('editPerm').value);
+  const dashboard_access = parseInt(document.getElementById('editDash').value);
+  const status = document.getElementById('editStatus').value;
+  const data = await api(`/auth/users/${id}`,{method:'PATCH',body:{role,permission_level,dashboard_access,status}});
+  if (data?.ok) { closeModal('editUserModal'); showToast('Gespeichert!','ok'); loadUsersPage(); }
+  else showToast(data?.error||'Fehler','err');
+}
+function openResetPw(id) { document.getElementById('resetUserId').value=id; document.getElementById('resetNewPw').value=''; openModal('resetPwModal'); }
+async function doResetPw() {
+  const id=document.getElementById('resetUserId').value;
+  const pw=document.getElementById('resetNewPw').value;
+  if(!pw||pw.length<8) return showToast('Mindestens 8 Zeichen','err');
+  const data=await api(`/auth/users/${id}/password`,{method:'POST',body:{new_password:pw}});
+  if(data?.ok){closeModal('resetPwModal');showToast('Passwort zurückgesetzt!','ok');}
+  else showToast(data?.error||'Fehler','err');
+}
+async function deleteUser(id,name) {
+  if(!confirm(`Nutzer "${name}" wirklich löschen?`))return;
+  const data=await api(`/auth/users/${id}`,{method:'DELETE'});
+  if(data?.ok){showToast('Gelöscht!','ok');loadUsersPage();}
+  else showToast(data?.error||'Fehler','err');
+}
+function openInviteModal(){showToast('Lade den Link zur Registrierung an den Nutzer: /register','ok');}
+
+// ── TEAM ──────────────────────────────────────────────────────────────────
+async function loadTeamPage() {
+  const [teamData,usersData]=await Promise.all([api('/panel/team'),api('/auth/users')]);
+  if(teamData)renderTeam(teamData.team||[]);
+  if(usersData)allUsers=usersData.users||[];
+
+  const team=teamData?.team||[];
+  document.getElementById('teamStats').innerHTML=[
+    `<div class="stat-card" style="--accent:var(--am)"><div class="stat-label">Team Mitglieder</div><div class="stat-value">${team.length}</div></div>`,
+    `<div class="stat-card" style="--accent:var(--pu2)"><div class="stat-label">Mit Dashboard</div><div class="stat-value">${team.filter(t=>t.dashboard_access).length}</div></div>`,
+    `<div class="stat-card" style="--accent:var(--cy)"><div class="stat-label">Aktiv</div><div class="stat-value">${team.filter(t=>t.status==='active').length}</div></div>`,
+  ].join('');
+}
+function renderTeam(team) {
+  document.getElementById('teamTable').innerHTML = team.map(m=>`
+    <tr>
+      <td><strong>${esc(m.username)}</strong></td>
+      <td style="font-family:var(--mono);font-size:.75rem;color:var(--mu)">${m.discord_id}</td>
+      <td>${roleBadge(m.role)}</td>
+      <td><span style="font-family:var(--mono)">${m.permission_level}</span></td>
+      <td>${statusBadge(m.status)}</td>
+      <td>${canEdit(m)&&currentUser?.permission_level>=95?`<button class="btn-sm btn-primary" onclick="openEditUser(${m.id})">✏️ Bearbeiten</button>`:'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--di);padding:20px">Kein Team</td></tr>';
+}
+
+// ── LOGS ──────────────────────────────────────────────────────────────────
+async function loadLogs() {
+  const type=document.getElementById('logTypeFilter')?.value||'';
+  const url=type?`/panel/logs?limit=100&type=${type}`:'/panel/logs?limit=100';
+  const data=await api(url);
+  renderLogs(data?.logs||[],'logsContainer');
+}
+function renderLogs(logs,containerId) {
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  if(!logs.length){el.innerHTML='<div style="color:var(--di);text-align:center;padding:20px">Keine Logs vorhanden</div>';return;}
+  el.innerHTML=logs.map(l=>`
+    <div class="log-item">
+      <span class="log-ts">${fmtDate(l.timestamp)}</span>
+      <span class="log-action">${l.action||'—'}</span>
+      <span class="log-detail">${l.username?`<strong>${esc(l.username)}</strong> · `:''} ${esc(l.details||'—')}</span>
+    </div>`).join('');
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────
+function loadSettingsPage() {
+  if(!currentUser)return;
+  document.getElementById('settingsAccountInfo').innerHTML=[
+    `<div class="status-row"><span class="status-label">Benutzername</span><span class="status-val">${esc(currentUser.username)}</span></div>`,
+    `<div class="status-row"><span class="status-label">Discord ID</span><span class="status-val" style="font-family:var(--mono)">${currentUser.discord_id}</span></div>`,
+    `<div class="status-row"><span class="status-label">Rolle</span>${roleBadge(currentUser.role)}</div>`,
+    `<div class="status-row"><span class="status-label">Permission Level</span><span class="status-val">${currentUser.permission_level}/100</span></div>`,
+  ].join('');
+}
+async function changePassword(e) {
+  e.preventDefault();
+  const cur=document.getElementById('curPw').value;
+  const np=document.getElementById('newPw').value;
+  const np2=document.getElementById('newPw2').value;
+  if(np!==np2)return showToast('Passwörter stimmen nicht überein','err');
+  if(np.length<8)return showToast('Mindestens 8 Zeichen','err');
+  const data=await api('/auth/change-password',{method:'POST',body:{current_password:cur,new_password:np}});
+  if(data?.ok){showToast('Passwort geändert! Bitte erneut anmelden.','ok');setTimeout(doLogout,2000);}
+  else showToast(data?.error||'Fehler','err');
+}
+
+// ── UTILITY ───────────────────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function showToast(msg,type='ok'){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t);
+    Object.assign(t.style,{position:'fixed',bottom:'24px',right:'24px',zIndex:'99999',padding:'12px 18px',borderRadius:'10px',fontFamily:'var(--font)',fontSize:'.85rem',fontWeight:'700',backdropFilter:'blur(16px)',transition:'all .3s cubic-bezier(.34,1.56,.64,1)',transform:'translateX(120%)',maxWidth:'320px',boxShadow:'0 8px 32px rgba(0,0,0,.4)'});}
+  t.textContent=msg;
+  if(type==='ok'){t.style.background='rgba(6,255,165,.12)';t.style.border='1px solid rgba(6,255,165,.3)';t.style.color='#06ffa5';}
+  else{t.style.background='rgba(244,63,94,.12)';t.style.border='1px solid rgba(244,63,94,.3)';t.style.color='#fb7185';}
+  setTimeout(()=>t.style.transform='translateX(0)',10);
+  clearTimeout(t._t);t._t=setTimeout(()=>t.style.transform='translateX(120%)',3500);
+}
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show');}
+
+async function doLogout(){
+  await api('/auth/logout',{method:'POST'});
+  localStorage.removeItem('nexus_token');
+  window.location.href='/login';
+}
+
+function refreshPage(){const active=document.querySelector('.nav-item.active');if(active){navTo(active.dataset.page);}else{loadHomePage();}}
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+checkAuth();
+</script>
+</body>
+</html>

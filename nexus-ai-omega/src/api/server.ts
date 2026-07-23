@@ -171,18 +171,40 @@ app.get('/api/v1/stream', (req,res)=>{
     });
   }, 1200);
 
-  const secHandler = (msg: unknown) => send('security', (msg as {value: unknown}).value);
-  const aiHandler  = (msg: unknown) => send('ai_log',   (msg as {value: unknown}).value);
-  const eb = eventBus as unknown as import('node:events').EventEmitter;
-  eb.on('security-alerts',      secHandler);
-  eb.on('dashboard-telemetry',  aiHandler);
+  const secHandler = (msg:any)=> send('security', msg.value);
+  const aiHandler  = (msg:any)=> send('ai_log', msg.value);
+  eventBus.on('security-alerts', secHandler);
+  eventBus.on('dashboard-telemetry', aiHandler);
 
-  req.on('close', () => { clearInterval(interval); eb.off('security-alerts', secHandler); eb.off('dashboard-telemetry', aiHandler); });
+  req.on('close', ()=>{ clearInterval(interval); eventBus.off('security-alerts', secHandler); eventBus.off('dashboard-telemetry', aiHandler); });
 });
 
-// Serve dashboard static
+// ── Nexus Auth + Panel Routes ──────────────────────────────────────────────
+import authRoutes from '../auth/authRoutes.js';
+import panelRoutes from '../panel/panelRoutes.js';
+import { authService } from '../auth/authService.js';
+import { setBotClient } from '../panel/panelRoutes.js';
+
+// Init auth DB tables
+authService.init().catch(err => logger.warn({ err }, 'Auth DB init warning'));
+
+app.use('/auth', authRoutes);
+app.use('/panel', panelRoutes);
+
+// Serve Auth/Panel pages
 app.use(express.static('src/dashboard'));
-app.get('/', (_req,res)=> res.sendFile(process.cwd() + '/src/dashboard/index.html'));
+app.use(express.static('src/panel'));
+
+// Login/Register pages
+app.get('/login',    (_req,res)=> res.sendFile(process.cwd() + '/src/panel/login.html'));
+app.get('/register', (_req,res)=> res.sendFile(process.cwd() + '/src/panel/login.html'));
+app.get('/dashboard',(_req,res)=> res.sendFile(process.cwd() + '/src/panel/panel.html'));
+
+// Root → panel
+app.get('/', (_req,res)=> res.redirect('/dashboard'));
+
+// Legacy dashboard
+app.get('/command-center', (_req,res)=> res.sendFile(process.cwd() + '/src/dashboard/index.html'));
 
 const PORT = Number(process.env.PORT || 8080);
 
@@ -194,9 +216,12 @@ async function boot(){
     logger.info(`🚀 Nexus AI Omega v3.1 UNIVERSAL listening on http://0.0.0.0:${PORT}`);
     const provs = aiEngine.listProviders().filter(p=>p.configured).map(p=>p.id).join(', ');
     logger.info(`🧠 AI Providers active: ${provs || 'nexus-mock'}`);
-    logger.info(`📊 Command Center: http://localhost:${PORT}`);
+    logger.info(`🔐 Auth Panel: http://localhost:${PORT}/login`);
+    logger.info(`📊 Team Panel: http://localhost:${PORT}/dashboard`);
   });
 }
 boot();
 
+// Export bot client setter so client.ts can register itself
+export { setBotClient };
 export default app;

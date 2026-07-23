@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Nexus AI Omega — Login</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#04050e;--bg2:#080a1a;--bg3:#0d1022;
+  --pu:#7c3aed;--pu2:#a855f7;--pu3:#c084fc;
+  --cy:#06ffa5;--bl:#0ea5e9;--pk:#f43f5e;--am:#fbbf24;
+  --tx:#eaecff;--mu:#8891b8;--di:#4b5380;
+  --glass:rgba(13,16,40,.85);--bo:rgba(124,58,237,.25);--bo2:rgba(124,58,237,.12);
+  --r:16px;--r2:10px;--r3:6px;
+  --font:'Outfit',system-ui,sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--font);overflow:hidden}
+body{
+  background:
+    radial-gradient(1200px 800px at 90% -5%,rgba(124,58,237,.14),transparent 55%),
+    radial-gradient(800px 600px at -5% 30%,rgba(14,165,233,.08),transparent 50%),
+    radial-gradient(600px 500px at 50% 110%,rgba(6,255,165,.05),transparent 55%),
+    linear-gradient(180deg,#050610 0%,#04050e 100%);
+  display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;
+}
+canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+.wrapper{position:relative;z-index:1;width:100%;max-width:460px}
+
+/* Logo */
+.logo{text-align:center;margin-bottom:32px}
+.logo-icon{
+  width:64px;height:64px;border-radius:18px;margin:0 auto 16px;
+  background:linear-gradient(135deg,var(--pu),var(--pu2),var(--cy));
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+  box-shadow:0 0 0 1px rgba(168,85,247,.3),0 8px 40px rgba(124,58,237,.5);
+  animation:logo-float 3s ease-in-out infinite
+}
+@keyframes logo-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.logo h1{font-size:1.6rem;font-weight:900;letter-spacing:-.02em;margin-bottom:4px}
+.logo-omega{background:linear-gradient(135deg,var(--pu2),var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo p{font-size:.85rem;color:var(--mu)}
+
+/* Card */
+.card{
+  background:var(--glass);border:1px solid var(--bo);border-radius:var(--r);
+  padding:32px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  box-shadow:0 24px 60px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04)
+}
+.card::before{content:'';display:block;height:2px;background:linear-gradient(90deg,var(--pu),var(--pu2),var(--cy));border-radius:var(--r) var(--r) 0 0;margin:-32px -32px 32px}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:28px;background:rgba(255,255,255,.04);border-radius:var(--r2);padding:4px}
+.tab{flex:1;padding:9px 16px;border-radius:8px;border:none;background:transparent;color:var(--mu);font-family:var(--font);font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s}
+.tab.active{background:rgba(124,58,237,.25);color:var(--pu3);box-shadow:0 0 10px rgba(124,58,237,.2)}
+.tab:hover:not(.active){color:var(--tx);background:rgba(255,255,255,.05)}
+
+/* Forms */
+.form{display:none;flex-direction:column;gap:16px}
+.form.active{display:flex}
+.field{display:flex;flex-direction:column;gap:6px}
+label{font-size:.8rem;font-weight:600;color:var(--mu);letter-spacing:.03em;text-transform:uppercase}
+input{
+  padding:12px 16px;border-radius:var(--r3);
+  background:rgba(255,255,255,.05);border:1px solid var(--bo2);
+  color:var(--tx);font-family:var(--font);font-size:.92rem;outline:none;
+  transition:all .22s
+}
+input:focus{border-color:var(--pu2);box-shadow:0 0 0 3px rgba(124,58,237,.15);background:rgba(124,58,237,.06)}
+input::placeholder{color:var(--di)}
+.input-hint{font-size:.73rem;color:var(--di);margin-top:2px;font-family:var(--mono)}
+
+/* Buttons */
+.btn{
+  padding:13px 24px;border-radius:var(--r3);border:none;cursor:pointer;
+  font-family:var(--font);font-size:.95rem;font-weight:700;
+  transition:all .22s;position:relative;overflow:hidden
+}
+.btn-primary{background:linear-gradient(135deg,var(--pu),var(--pu2));color:#fff;box-shadow:0 4px 20px rgba(124,58,237,.35)}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px);box-shadow:0 8px 28px rgba(124,58,237,.45)}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-primary::before{content:'';position:absolute;top:-50%;left:-60%;width:50%;height:200%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transform:skewX(-20deg);animation:shimmer 3s ease-in-out infinite}
+@keyframes shimmer{0%{left:-60%}100%{left:120%}}
+
+/* Alert */
+.alert{
+  padding:12px 16px;border-radius:var(--r3);font-size:.85rem;font-weight:600;
+  display:none;align-items:center;gap:8px;animation:slide-in .3s ease
+}
+@keyframes slide-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.alert.show{display:flex}
+.alert-error{background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.3);color:#fb7185}
+.alert-success{background:rgba(6,255,165,.1);border:1px solid rgba(6,255,165,.25);color:var(--cy)}
+.alert-icon{font-size:1.1rem;flex-shrink:0}
+
+
+
+/* Loader */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Footer */
+.footer{text-align:center;margin-top:24px;font-size:.78rem;color:var(--di)}
+.footer a{color:var(--mu);transition:color .2s}
+.footer a:hover{color:var(--cy)}
+
+@media(max-width:500px){.card{padding:22px}}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="wrapper">
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <h1>Nexus AI <span class="logo-omega">Omega</span></h1>
+    <p>Team Control Center — Secure Access</p>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('login')">🔐 Login</button>
+      <button class="tab" onclick="switchTab('register')">📝 Registrieren</button>
+    </div>
+
+    <!-- Alert -->
+    <div class="alert alert-error" id="alertError">
+      <span class="alert-icon">❌</span>
+      <span id="alertErrorMsg">Fehler</span>
+    </div>
+    <div class="alert alert-success" id="alertSuccess">
+      <span class="alert-icon">✅</span>
+      <span id="alertSuccessMsg">Erfolgreich</span>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <form class="form active" id="loginForm" onsubmit="doLogin(event)">
+      <div class="field">
+        <label>Benutzername oder Discord Account ID</label>
+        <input type="text" id="loginIdentifier" placeholder="Benutzername oder Discord ID" autocomplete="username" required/>
+      </div>
+      <div class="field">
+        <label>Passwort</label>
+        <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" required/>
+      </div>
+      <button type="submit" class="btn btn-primary" id="loginBtn">🔐 Anmelden</button>
+    </form>
+
+    <!-- REGISTER FORM -->
+    <form class="form" id="registerForm" onsubmit="doRegister(event)">
+      <div class="field">
+        <label>Benutzername</label>
+        <input type="text" id="regUsername" placeholder="nexusdev" minlength="3" maxlength="32" required/>
+        <div class="input-hint">3–32 Zeichen · Buchstaben, Zahlen, _ . -</div>
+      </div>
+      <div class="field">
+        <label>Discord Account ID</label>
+        <input type="text" id="regDiscordId" placeholder="Deine 17–19-stellige Discord User ID" pattern="\d{17,19}" required/>
+        <div class="input-hint">Deine 17–19-stellige Discord User ID · Einmalig pro Account</div>
+      </div>
+      <div class="field">
+        <label>Passwort</label>
+        <input type="password" id="regPassword" placeholder="Mindestens 8 Zeichen" minlength="8" required/>
+      </div>
+      <div class="field">
+        <label>Passwort bestätigen</label>
+        <input type="password" id="regConfirm" placeholder="••••••••" required/>
+      </div>
+      <button type="submit" class="btn btn-primary" id="registerBtn">📝 Account erstellen</button>
+    </form>
+
+  </div>
+
+  <div class="footer">
+    <a href="/command-center">📊 Legacy Dashboard</a> · 
+    <a href="https://discord.gg/kzaMp69dD" target="_blank">💬 Support</a> · 
+    Nexus AI Omega v5.0
+  </div>
+</div>
+
+<script>
+// ── Canvas Particles ──────────────────────────────────────────────────────
+(()=>{
+  const c=document.getElementById('cv'),x=c.getContext('2d');
+  let W,H,P=[];
+  const init=()=>{W=c.width=innerWidth;H=c.height=innerHeight;P=[];for(let i=0;i<80;i++)P.push({x:Math.random()*W,y:Math.random()*H,r:.3+Math.random()*1.2,a:Math.random(),da:.002+Math.random()*.004,spd:.1+Math.random()*.3,col:Math.random()>.6?'124,58,237':'6,255,165'})};
+  const draw=()=>{x.clearRect(0,0,W,H);P.forEach(p=>{p.a+=p.da;if(p.a>1||p.a<0)p.da*=-1;p.y-=p.spd;if(p.y<0){p.y=H;p.x=Math.random()*W;}x.beginPath();x.arc(p.x,p.y,p.r,0,Math.PI*2);x.fillStyle=`rgba(${p.col},${p.a*.5})`;x.fill();});requestAnimationFrame(draw)};
+  window.addEventListener('resize',init);init();draw();
+})();
+
+// ── Tab switching ─────────────────────────────────────────────────────────
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===(tab==='login'?0:1)));
+  document.getElementById('loginForm').classList.toggle('active',tab==='login');
+  document.getElementById('registerForm').classList.toggle('active',tab==='register');
+  hideAlerts();
+}
+
+// ── Alerts ────────────────────────────────────────────────────────────────
+function showError(msg){hideAlerts();const a=document.getElementById('alertError');document.getElementById('alertErrorMsg').textContent=msg;a.classList.add('show');}
+function showSuccess(msg){hideAlerts();const a=document.getElementById('alertSuccess');document.getElementById('alertSuccessMsg').textContent=msg;a.classList.add('show');}
+function hideAlerts(){document.getElementById('alertError').classList.remove('show');document.getElementById('alertSuccess').classList.remove('show');}
+
+// ── Login ─────────────────────────────────────────────────────────────────
+async function doLogin(e){
+  e.preventDefault();
+  const btn=document.getElementById('loginBtn');
+  const identifier=document.getElementById('loginIdentifier').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  if(!identifier||!password)return showError('Alle Felder ausfüllen.');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Anmelden...';
+  try{
+    const res=await fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier,password}),credentials:'include'});
+    const data=await res.json();
+    if(!data.ok){showError(data.error||'Login fehlgeschlagen.');return;}
+    // Store token
+    if(data.token)localStorage.setItem('nexus_token',data.token);
+    showSuccess('Anmeldung erfolgreich! Weiterleitung...');
+    setTimeout(()=>{
+      if(data.user?.dashboard_access){window.location.href='/dashboard';}
+      else{showError('Kein Dashboard-Zugang. Kontaktiere einen Admin.');}
+    },1200);
+  }catch(err){showError('Netzwerkfehler. Versuche es erneut.');}
+  finally{btn.disabled=false;btn.innerHTML='🔐 Anmelden';}
+}
+
+// ── Register ──────────────────────────────────────────────────────────────
+async function doRegister(e){
+  e.preventDefault();
+  const btn=document.getElementById('registerBtn');
+  const username=document.getElementById('regUsername').value.trim();
+  const discord_id=document.getElementById('regDiscordId').value.trim();
+  const password=document.getElementById('regPassword').value;
+  const confirm_password=document.getElementById('regConfirm').value;
+  if(!username||!discord_id||!password||!confirm_password)return showError('Alle Felder ausfüllen.');
+  if(password!==confirm_password)return showError('Passwörter stimmen nicht überein.');
+  if(password.length<8)return showError('Passwort muss mindestens 8 Zeichen haben.');
+  if(!/^\d{17,19}$/.test(discord_id))return showError('Discord Account ID muss 17–19 Ziffern haben.');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Erstelle Account...';
+  try{
+    const res=await fetch('/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username,discord_id,password,confirm_password}),credentials:'include'});
+    const data=await res.json();
+    if(!data.ok){showError(data.error||'Registrierung fehlgeschlagen.');return;}
+    if(data.token)localStorage.setItem('nexus_token',data.token);
+    showSuccess(`Account erstellt! Rolle: ${data.user?.role||'TEAM'}. Weiterleitung...`);
+    setTimeout(()=>{
+      if(data.user?.dashboard_access){window.location.href='/dashboard';}
+      else{showSuccess('Account erstellt! Warte auf Freischaltung durch einen Admin.');switchTab('login');}
+    },2000);
+  }catch(err){showError('Netzwerkfehler. Versuche es erneut.');}
+  finally{btn.disabled=false;btn.innerHTML='📝 Account erstellen';}
+}
+
+// ── Auto-redirect if already logged in ────────────────────────────────────
+(async()=>{
+  const token=localStorage.getItem('nexus_token');
+  if(!token)return;
+  try{
+    const res=await fetch('/auth/validate',{headers:{Authorization:`Bearer ${token}`},credentials:'include'});
+    const data=await res.json();
+    if(data.valid&&data.user?.dashboard_access)window.location.href='/dashboard';
+  }catch{}
+})();
+</script>
+</body>
+</html>
