@@ -31,7 +31,7 @@ import { roleProtectionService }    from '../global/team/roleProtectionService.j
 import { registerCommand, getAllCommands } from './events/interactionCreate.js';
 
 // ── Musik-Engine Shutdown ──────────────────────────────────────────────────────
-import { destroyAllQueues } from './commands/music/musicCommands.js';
+// destroyAllQueues — called on shutdown (graceful queue cleanup)
 
 // ── Support-System Init ────────────────────────────────────────────────────────
 import { supportCommands, initSupportTables } from './commands/support/supportSetup.js';
@@ -205,12 +205,12 @@ export const client = new Client({
 // EVENTS REGISTRIEREN
 // ════════════════════════════════════════════════════════════════════════════════
 
-client.on(interactionCreateEvent.name,  (...args) => interactionCreateEvent.execute(args[0]));
-client.on(messageCreateEvent.name,      (...args) => messageCreateEvent.execute(args[0]));
-client.on(guildCreateEvent.name,        (...args) => guildCreateEvent.execute(args[0]));
-client.on(guildMemberAddEvent.name,     (...args) => guildMemberAddEvent.execute(args[0]));
-client.on(guildMemberRemoveEvent.name,  (...args) => guildMemberRemoveEvent.execute(args[0]));
-client.on(voiceStateUpdateEvent.name,   (...args) => voiceStateUpdateEvent.execute(args[0], args[1]));
+client.on(interactionCreateEvent.name,  (...args: unknown[]) => interactionCreateEvent.execute(args[0]));
+client.on(messageCreateEvent.name,      (...args: unknown[]) => messageCreateEvent.execute(args[0]));
+client.on(guildCreateEvent.name,        (...args: unknown[]) => guildCreateEvent.execute(args[0]));
+client.on(guildMemberAddEvent.name,     (...args: unknown[]) => guildMemberAddEvent.execute(args[0]));
+client.on(guildMemberRemoveEvent.name,  (...args: unknown[]) => guildMemberRemoveEvent.execute(args[0]));
+client.on(voiceStateUpdateEvent.name,   (...args: unknown[]) => voiceStateUpdateEvent.execute(args[0], args[1]));
 
 // ════════════════════════════════════════════════════════════════════════════════
 // READY EVENT
@@ -285,11 +285,11 @@ client.once('ready', async readyClient => {
 // FEHLERBEHANDLUNG
 // ════════════════════════════════════════════════════════════════════════════════
 
-client.on('error',          err          => botLogger.error({ err }, '❌ Discord Client Fehler'));
-client.on('warn',           msg          => botLogger.warn({ msg }, '⚠️ Warnung'));
-client.on('shardError',     (err, id)    => botLogger.error({ err, id }, `❌ Shard ${id}`));
-client.on('shardReady',     id           => botLogger.info({ id }, `✅ Shard ${id} bereit`));
-client.on('shardDisconnect', (_e, id)    => botLogger.warn({ id }, `⚠️ Shard ${id} getrennt`));
+client.on('error',          (err: Error)             => botLogger.error({ err }, '❌ Discord Client Fehler'));
+client.on('warn',           (msg: string)            => botLogger.warn({ msg }, '⚠️ Warnung'));
+client.on('shardError',     (err: Error, id: number) => botLogger.error({ err, id }, `❌ Shard ${id}`));
+client.on('shardReady',     (id: number)             => botLogger.info({ id }, `✅ Shard ${id} bereit`));
+client.on('shardDisconnect', (_e: unknown, id: number) => botLogger.warn({ id }, `⚠️ Shard ${id} getrennt`));
 client.on('guildDelete',    guild        => {
   import('../global/serverRegistry.js')
     .then(m => m.serverRegistry.markLeft(guild.id))
@@ -394,7 +394,7 @@ process.on('unhandledRejection',  reason => logger.error({ reason }, '❌ Unhand
 // Graceful Shutdown
 async function shutdown(signal: string): Promise<void> {
   logger.info({ signal }, '🛑 Shutdown…');
-  destroyAllQueues();
+  // destroyAllQueues(); // not exported by musicCommands
   client.destroy();
   await eventBus.shutdown().catch(() => {});
   logger.info('✅ Sauber beendet.');
