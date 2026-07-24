@@ -332,7 +332,7 @@ export async function joinChannel(
     const connection = joinVoiceChannel({
       channelId:      voiceChannel.id,
       guildId:        guild.id,
-      adapterCreator: guild.voiceAdapterCreator,
+      adapterCreator: guild.voiceAdapterCreator as any,
       selfDeaf:       true,
     });
 

@@ -16,8 +16,8 @@ export async function startWorker(role: 'core'|'security'|'ai'|'analytics'|'audi
       chBatcher.push({
         ts: msg.timestamp,
         guild_id: msg.key || '0',
-        type: msg.value?.type || 'event',
-        user_id: msg.value?.userId,
+        type: (msg.value as any)?.type || 'event',
+        user_id: (msg.value as any)?.userId,
         data: msg.value
       });
     });
@@ -33,7 +33,7 @@ export async function startWorker(role: 'core'|'security'|'ai'|'analytics'|'audi
   }
   if(role==='ai'){
     await eventBus.subscribe('ai-inference', groupId, async msg=>{
-      logger.debug('AI job', msg.value?.module);
+      logger.debug('AI job', (msg.value as any)?.module);
     });
   }
   if(role==='audio'){

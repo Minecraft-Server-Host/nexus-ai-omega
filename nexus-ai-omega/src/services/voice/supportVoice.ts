@@ -198,7 +198,7 @@ export async function joinSupportWaitroom(options: {
     const connection = joinVoiceChannel({
       channelId,
       guildId,
-      adapterCreator: guild.voiceAdapterCreator,
+      adapterCreator: guild.voiceAdapterCreator as any,
       selfDeaf: false,
       selfMute: false,
     });
